@@ -1,4 +1,4 @@
-package logger
+package logutils
 
 /**
  * @Author: lee
@@ -54,6 +54,9 @@ func (m *ZapLogModule) Debug(msg string, fields ...zap.Field) {
 func (m *ZapLogModule) Fatal(msg string, fields ...zap.Field) {
 	m.logger.Fatal(msg, fields...)
 }
+func (m *ZapLogModule) DPanic(msg string, fields ...zap.Field) {
+	m.logger.DPanic(msg, fields...)
+}
 
 var zapConfig ZapConfig
 var level zapcore.Level
@@ -104,6 +107,7 @@ func newZapLogger(config ZapConfig) (logger *zap.Logger, err error) {
 	}
 	if zapConfig.ShowLine {
 		logger = logger.WithOptions(zap.AddCaller())
+		logger = logger.WithOptions(zap.AddCallerSkip(2))
 	}
 
 	return logger, nil

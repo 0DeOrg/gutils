@@ -14,14 +14,14 @@ import (
 	"strconv"
 )
 
-type RestClient struct {
-	BaseClient
+type RestAgent struct {
+	NetAgentBase
 	Client *resty.Client
 }
 
-var _ HttpInterface = (*RestClient)(nil)
+var _ HttpInterface = (*RestAgent)(nil)
 
-func NewRestClient(host string, port uint, isHttps bool) (*RestClient, error) {
+func NewRestClient(host string, port uint, isHttps bool) (*RestAgent, error) {
 	hostUrl := ""
 	if isHttps {
 		hostUrl += "https://" + host
@@ -39,8 +39,8 @@ func NewRestClient(host string, port uint, isHttps bool) (*RestClient, error) {
 	}
 
 	client := resty.New()
-	ret := RestClient{
-		BaseClient :BaseClient{
+	ret := RestAgent{
+		NetAgentBase: NetAgentBase{
 			URL: url,
 		},
 		Client: client,
@@ -49,7 +49,7 @@ func NewRestClient(host string, port uint, isHttps bool) (*RestClient, error) {
 	return &ret, nil
 }
 
-func (h *RestClient) SimpleGet(path string, params map[string]string) (string, error) {
+func (h *RestAgent) SimpleGet(path string, params map[string]string) (string, error) {
 	url := h.URL.String() + path
 	res, err :=h.Client.R().SetQueryParams(params).Get(url)
 	if nil != err {
@@ -59,7 +59,7 @@ func (h *RestClient) SimpleGet(path string, params map[string]string) (string, e
 	return string(res.Body()), nil
 }
 
-func (h *RestClient) SimplePost(path string, reqBody string, params map[string]string) (string, error) {
+func (h *RestAgent) SimplePost(path string, reqBody string, params map[string]string) (string, error) {
 	url := h.URL.String() + path
 	res, err := h.Client.R().SetQueryParams(params).SetBody(reqBody).Post(url)
 	if nil != err {
@@ -69,7 +69,7 @@ func (h *RestClient) SimplePost(path string, reqBody string, params map[string]s
 	return string(res.Body()), nil
 }
 
-func (h *RestClient) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+func (h *RestAgent) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	url := h.URL.String() + path
 	res, err := h.Client.R().SetQueryParams(params).SetHeaders(headers).SetCookies(cookies).Get(url)
 	if nil != err {
@@ -79,7 +79,7 @@ func (h *RestClient) Get(path string, params map[string]string, headers map[stri
 	return string(res.Body()), nil
 }
 
-func (h *RestClient) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+func (h *RestAgent) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	url := h.URL.String() + path
 	res, err := h.Client.R().SetQueryParams(params).SetBody(reqBody).SetHeaders(headers).SetCookies(cookies).Post(url)
 	if nil != err {

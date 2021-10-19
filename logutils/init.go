@@ -1,4 +1,4 @@
-package logger
+package logutils
 
 import (
 	"fmt"
@@ -25,6 +25,7 @@ type ILogger interface {
 	Warn(msg string, fields ...zap.Field)
 	Debug(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
+	DPanic(msg string, fields ...zap.Field)
 }
 
 func InitLogger(config interface{}) {
@@ -72,4 +73,11 @@ func Fatal(msg string, fields ...zap.Field) {
 		panic(errorNotInit)
 	}
 	loggerModule.Fatal(msg, fields...)
+}
+
+func DPanic(msg string, fields ...zap.Field) {
+	if !logInit {
+		panic(errorNotInit)
+	}
+	loggerModule.DPanic(msg, fields...)
 }

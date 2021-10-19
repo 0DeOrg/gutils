@@ -26,28 +26,28 @@ type SocketInterface interface {
 	Close()
 }
 
-type BaseClient struct {
+type NetAgentBase struct {
 	URL *url.URL
 	isAlive 	bool
 	timeout 	int
 	isClosed	bool
 }
 
-var _ HttpInterface = (*BaseClient)(nil)
+var _ HttpInterface = (*NetAgentBase)(nil)
 
-func (b *BaseClient) SimpleGet(path string, params map[string]string) (string, error) {
+func (b *NetAgentBase) SimpleGet(path string, params map[string]string) (string, error) {
 	return "", nil
 }
 
-func (b *BaseClient) SimplePost(path string, body string, params map[string]string) (string, error) {
+func (b *NetAgentBase) SimplePost(path string, body string, params map[string]string) (string, error) {
 	return "", nil
 }
 
-func (b *BaseClient) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+func (b *NetAgentBase) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	return "", nil
 }
 
-func (b *BaseClient) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+func (b *NetAgentBase) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	return "", nil
 }
 

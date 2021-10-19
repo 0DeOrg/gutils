@@ -25,8 +25,8 @@ type HttpHost struct {
 	CAPath string
 }
 
-type HttpClient struct {
-	BaseClient
+type HttpAgent struct {
+	NetAgentBase
 	Client *http.Client
 }
 
@@ -36,7 +36,7 @@ const (
 	ForwardCustomReq = "CustomReq"
 )
 
-func NewHttpClient(host string, port uint, isHttps bool) (*HttpClient, error) {
+func NewHttpClient(host string, port uint, isHttps bool) (*HttpAgent, error) {
 	hostUrl := ""
 	if isHttps {
 		hostUrl += "https://" + host
@@ -57,8 +57,8 @@ func NewHttpClient(host string, port uint, isHttps bool) (*HttpClient, error) {
 		Timeout: 20 * time.Second,
 	}
 
-	ret := &HttpClient{
-		BaseClient: BaseClient{
+	ret := &HttpAgent{
+		NetAgentBase: NetAgentBase{
 			URL: url,
 		},
 		Client: client,
@@ -67,9 +67,9 @@ func NewHttpClient(host string, port uint, isHttps bool) (*HttpClient, error) {
 	return ret, nil
 }
 
-var _ HttpInterface = (*HttpClient)(nil)
+var _ HttpInterface = (*HttpAgent)(nil)
 
-func (h *HttpClient) SimpleGet(path string, params map[string]string) (string, error) {
+func (h *HttpAgent) SimpleGet(path string, params map[string]string) (string, error) {
 	url := h.URL.String() + path
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -99,7 +99,7 @@ func (h *HttpClient) SimpleGet(path string, params map[string]string) (string, e
 	return string(body), nil
 }
 
-func (h *HttpClient) SimplePost(path string, reqBody string, params map[string]string) (string, error){
+func (h *HttpAgent) SimplePost(path string, reqBody string, params map[string]string) (string, error){
 	url := h.URL.String() + path
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(reqBody))
 	if err != nil {
@@ -131,7 +131,7 @@ func (h *HttpClient) SimplePost(path string, reqBody string, params map[string]s
 	return string(resBody), nil
 }
 
-func (h *HttpClient) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+func (h *HttpAgent) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	url := h.URL.String() + path
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -168,7 +168,7 @@ func (h *HttpClient) Get(path string, params map[string]string, headers map[stri
 
 	return string(body), nil
 }
-func (h *HttpClient) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+func (h *HttpAgent) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	url := h.URL.String() + path
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(reqBody))
 	if err != nil {
