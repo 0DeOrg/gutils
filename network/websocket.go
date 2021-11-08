@@ -27,7 +27,7 @@ type  WebsocketAgent struct {
 	reqChan chan string
 	OnPing func(string) error
 	OnMessage func(*WebsocketAgent, string) //收到消息回调
-	OnSend func(*WebsocketAgent, string)    //发送消息回调
+	OnSend func(*WebsocketAgent, int, string)    //发送消息回调
 	OnClose func(*WebsocketAgent)
 	OnConnected func()                          //连接被断开回调
 	errConn error
@@ -114,20 +114,21 @@ func (ws *WebsocketAgent) SendPongMsg(data []byte) {
 }
 
 func (ws *WebsocketAgent) WaitForConnected() error {
-	var err = make(chan error)
-	defer close(err)
-	go func(errChan chan error) {
-		for {
-			if !ws.isAlive {
-				time.Sleep(100 * time.Millisecond)
-			} else {
-				errChan <- ws.errConn
-				break
+	var ret error
+	tick := time.Tick(100 * time.Millisecond)
+	for {
+		select {
+		case <- tick: {
+			if ws.isAlive {
+				return nil
 			}
 		}
-	}(err)
-	ret := <- err
-	return ret
+		case <-time.After(30 * time.Second): {
+			ret = fmt.Errorf("wait for websocket connect time out, url: " + ws.URL.String())
+			return ret
+		}
+		}
+	}
 }
 
 func (ws *WebsocketAgent) dial() error {
@@ -191,7 +192,7 @@ func (ws *WebsocketAgent) doSendThread() {
 			}
 
 			if nil != ws.OnSend {
-				ws.OnSend(ws, sendMsg)
+				ws.OnSend(ws, messageType, sendMsg)
 			}
 			if ws.sendElapse > 0 {
 				elapse := time.Duration(ws.sendElapse) * time.Millisecond
