@@ -51,7 +51,10 @@ func NewRestClient(host string, port uint, isHttps bool) (*RestAgent, error) {
 
 func (h *RestAgent) SimpleGet(path string, params map[string]string) (string, error) {
 	url := h.URL.String() + path
-	res, err :=h.Client.R().SetQueryParams(params).Get(url)
+	if nil != params {
+
+	}
+	res, err := h.Client.R().SetQueryParams(params).Get(url)
 	if nil != err {
 		return "", err
 	}

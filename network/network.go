@@ -1,4 +1,5 @@
 package network
+
 /**
  * @Author: lee
  * @Description:
@@ -27,10 +28,10 @@ type SocketInterface interface {
 }
 
 type NetAgentBase struct {
-	URL *url.URL
-	isAlive 	bool
-	timeout 	int
-	isClosed	bool
+	URL      *url.URL
+	isAlive  bool
+	timeout  int
+	isClosed bool
 }
 
 var _ HttpInterface = (*NetAgentBase)(nil)
