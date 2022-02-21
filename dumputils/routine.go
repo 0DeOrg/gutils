@@ -31,7 +31,18 @@ func HandlePanic() {
 			err = errors.New("Unknown panic")
 		}
 
-		logutils.DPanic("panic stack:\n " + stack + "\n", zap.Error(err))
+		pc := make([]uintptr, 1)
+		numFrames := runtime.Callers(1, pc)
+		if numFrames < 1 {
+			return
+		}
+
+		frame, _ := runtime.CallersFrames(pc).Next()
+
+		logutils.Error("frame function, file, line", zap.String("function", frame.Function), zap.String("file", frame.File), zap.Int("line", frame.Line))
+
+		logutils.DPanic("panic stack:\n "+stack+"\n", zap.Error(err))
+
 	}
 }
 

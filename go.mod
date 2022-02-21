@@ -3,6 +3,7 @@ module gutils
 go 1.16
 
 require (
+	github.com/apolloconfig/agollo/v4 v4.1.0
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/garyburd/redigo v1.6.2
