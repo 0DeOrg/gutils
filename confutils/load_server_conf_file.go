@@ -23,7 +23,7 @@ func LoadApolloConfigWhenStartup(path string) *config.AppConfig {
 	// 通过viper解析配置文件并反序列化至结构体
 	apolloConf := Apollo{}
 	fileName := APOLLO_PATH
-	if "" == path {
+	if "" != path {
 		fileName = path
 	}
 	gutils.NewViper(fileName, &apolloConf)
