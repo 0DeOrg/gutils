@@ -1,4 +1,5 @@
 package gutils
+
 /**
  * @Author: lee
  * @Description:
@@ -7,7 +8,6 @@ package gutils
  */
 
 import (
-	"flag"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -16,12 +16,15 @@ import (
 
 const CONFIG_PATH = "config.yaml"
 
+//外部命令行解析的时候赋值
+var CfgPathFlag = ""
+
 func NewViper(path string, pObj interface{}) *viper.Viper {
 	var config string
 	if len(path) == 0 {
-		flag.StringVar(&config, "c", "", "choose config file.")
-		flag.Parse()
-		if config != "" {
+		//flag.StringVar(&config, "c", "", "choose config file.")
+		//flag.Parse()
+		if CfgPathFlag != "" {
 			fmt.Printf("您正在使用命令行的-c参数传递的值,config的路径为%v\n", config)
 		} else {
 			config = CONFIG_PATH
