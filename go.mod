@@ -10,6 +10,7 @@ require (
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-kit/log v0.2.0
 	github.com/go-resty/resty/v2 v2.6.0
+	github.com/goinggo/mapstructure v0.0.0-20140717182941-194205d9b4a9
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/consul/api v1.10.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect

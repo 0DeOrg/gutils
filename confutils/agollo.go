@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/apolloconfig/agollo/v4"
 	"github.com/apolloconfig/agollo/v4/env/config"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"log"
 	"reflect"
@@ -34,34 +35,39 @@ type CommonProperties struct {
  * @return error
  */
 func ApolloGetServerConfig(c *config.AppConfig, confStruct interface{}) error {
-	propertiesStr, err := loadServerConfigFromApollo(c)
-	if err != nil {
-		return fmt.Errorf("LoadAllConfigFromApollo error: %s", err.Error())
+
+	// 根据apollo服务信息创建相对应的客户端
+	client, err := agollo.StartWithConfig(func() (*config.AppConfig, error) {
+		return c, nil
+	})
+
+	if nil != err {
+		return err
 	}
 
-	// 创建properties格式配置信息处理对象
-	properties := newProperties(propertiesStr)
-	properties.setString(propertiesStr)
-
-	// FIXME: 跑稳定之后删掉
-	//fmt.Println("解析到的properties格式的配置信息:")
-	//fmt.Println(string(properties.properties))
-
-	if string(properties.properties) == "" {
-		return fmt.Errorf("Agollo loadServerConfigFromApollo error, properties content is nil!")
+	if nil == client {
+		return fmt.Errorf("StartWithConfig client is nil")
 	}
 
-	// 将配置反序列化至服务配置
-	err = properties.unmarshal(confStruct)
-	if err != nil {
-		return fmt.Errorf("UnmarshalProperties error: %s", err.Error())
+	cache := client.GetConfigCache(c.NamespaceName)
+
+	vp := viper.New()
+	cache.Range(func(key, value interface{}) bool {
+		vp.Set(cast.ToString(key), value)
+		return true
+	})
+
+	err = vp.Unmarshal(confStruct)
+
+	if nil != err {
+		return err
 	}
 
 	return nil
 }
 
 // @Description 根据指定的apollo应用配置访问配置信息
-// @Author Oracle
+// @Author Oracle/
 // @Version 1.0
 // @Update Oracle 2021-11-24 init
 func loadServerConfigFromApollo(c *config.AppConfig) (string, error) {

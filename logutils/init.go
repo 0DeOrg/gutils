@@ -1,20 +1,20 @@
 package logutils
 
-import (
-	"fmt"
-	"go.uber.org/zap"
-)
-
 /**
  * @Author: lee
  * @Description:
  * @File: init
  * @Date: 2021/9/14 3:41 下午
  */
+import (
+	"fmt"
+	"go.uber.org/zap"
+	"log"
+)
 
 var (
 	loggerModule ILogger
-	logInit   	= false
+	logInit      = false
 
 	errorNotInit = fmt.Errorf("log module not inited")
 )
@@ -33,7 +33,7 @@ func InitLogger(config interface{}) {
 	if v, ok := config.(ZapConfig); ok {
 		loggerModule, err = newZapLogModule(v)
 		if nil != err {
-			panic(fmt.Errorf("zap log init fault"))
+			log.Fatal("zap log init fault, ", err.Error(), v)
 		}
 
 		logInit = true
