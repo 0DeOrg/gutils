@@ -12,6 +12,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"gutils/judge"
+	"log"
 )
 
 const CONFIG_PATH = "config.yaml"
@@ -37,23 +38,23 @@ func NewViper(path string, pObj interface{}) *viper.Viper {
 	v.SetConfigFile(config)
 	err := v.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("fatal error can't find config file: %s \n", err))
+		log.Fatal("fatal error can't find config file: ", err.Error())
 	}
 	v.WatchConfig()
 
 	if !judge.IsStructPtr(pObj) {
-		panic(fmt.Errorf("fatal error viper pObj must be struct pointer"))
+		log.Fatal("fatal error viper pObj must be struct pointer")
 	}
 
 	v.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("config file changed:", e.Name)
+		log.Println("config file changed:", e.Name)
 		if err := v.Unmarshal(pObj); err != nil {
-			fmt.Println(err)
+			log.Println(err.Error())
 		}
 	})
 
 	if err := v.Unmarshal(pObj); err != nil {
-		fmt.Println(err)
+		log.Println(err.Error())
 	}
 	return v
 }
