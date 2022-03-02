@@ -26,6 +26,11 @@ type ILogger interface {
 	Debug(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
 	DPanic(msg string, fields ...zap.Field)
+	Infof(format string, values ...interface{})
+	Errorf(format string, values ...interface{})
+	Warnf(format string, values ...interface{})
+	Debugf(format string, values ...interface{})
+	Fatalf(format string, values ...interface{})
 }
 
 func InitLogger(config interface{}) {
@@ -38,6 +43,10 @@ func InitLogger(config interface{}) {
 
 		logInit = true
 	}
+}
+
+func Logger() ILogger {
+	return loggerModule
 }
 
 func Info(msg string, fields ...zap.Field) {
