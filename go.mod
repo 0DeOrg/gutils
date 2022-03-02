@@ -3,12 +3,16 @@ module gutils
 go 1.16
 
 require (
+	github.com/apolloconfig/agollo/v4 v4.1.0
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/garyburd/redigo v1.6.2
 	github.com/gin-gonic/gin v1.7.4
+	github.com/go-kit/log v0.2.0
 	github.com/go-resty/resty/v2 v2.6.0
+	github.com/goinggo/mapstructure v0.0.0-20140717182941-194205d9b4a9
 	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/consul/api v1.10.1
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/juju/ratelimit v1.0.1
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible

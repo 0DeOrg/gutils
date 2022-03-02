@@ -1,4 +1,5 @@
 package gutils
+
 /**
  * @Author: lee
  * @Description:
@@ -7,21 +8,24 @@ package gutils
  */
 
 import (
-	"flag"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"gutils/judge"
+	"log"
 )
 
 const CONFIG_PATH = "config.yaml"
 
+//外部命令行解析的时候赋值
+var CfgPathFlag = ""
+
 func NewViper(path string, pObj interface{}) *viper.Viper {
 	var config string
 	if len(path) == 0 {
-		flag.StringVar(&config, "c", "", "choose config file.")
-		flag.Parse()
-		if config != "" {
+		//flag.StringVar(&config, "c", "", "choose config file.")
+		//flag.Parse()
+		if CfgPathFlag != "" {
 			fmt.Printf("您正在使用命令行的-c参数传递的值,config的路径为%v\n", config)
 		} else {
 			config = CONFIG_PATH
@@ -34,23 +38,23 @@ func NewViper(path string, pObj interface{}) *viper.Viper {
 	v.SetConfigFile(config)
 	err := v.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("fatal error can't find config file: %s \n", err))
+		log.Fatal("fatal error can't find config file: ", err.Error())
 	}
 	v.WatchConfig()
 
 	if !judge.IsStructPtr(pObj) {
-		panic(fmt.Errorf("fatal error viper pObj must be struct pointer"))
+		log.Fatal("fatal error viper pObj must be struct pointer")
 	}
 
 	v.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("config file changed:", e.Name)
+		log.Println("config file changed:", e.Name)
 		if err := v.Unmarshal(pObj); err != nil {
-			fmt.Println(err)
+			log.Println(err.Error())
 		}
 	})
 
 	if err := v.Unmarshal(pObj); err != nil {
-		fmt.Println(err)
+		log.Println(err.Error())
 	}
 	return v
 }

@@ -3,8 +3,7 @@ package dumputils
 import (
 	"bytes"
 	"errors"
-	"go.uber.org/zap"
-	"gutils/logutils"
+	"log"
 	"runtime"
 )
 
@@ -15,7 +14,7 @@ import (
  * @Date: 2021/10/14 2:53 下午
  */
 
-func HandlePanic() {
+func HandlePanic(v ...interface{}) {
 	var err error
 	var stack string
 	if r := recover(); nil != r {
@@ -31,7 +30,17 @@ func HandlePanic() {
 			err = errors.New("Unknown panic")
 		}
 
-		logutils.DPanic("panic stack:\n " + stack + "\n", zap.Error(err))
+		pc := make([]uintptr, 1)
+		numFrames := runtime.Callers(4, pc)
+		if numFrames < 1 {
+			return
+		}
+
+		frame, _ := runtime.CallersFrames(pc).Next()
+		log.Println("rame function, file, line", frame.Function, frame.File, frame.Line)
+
+		log.Println("panic stack:\n "+stack+"\n", err.Error())
+
 	}
 }
 
