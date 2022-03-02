@@ -1,4 +1,5 @@
 package network
+
 /**
  * @Author: lee
  * @Description:
@@ -16,22 +17,23 @@ import (
 	"time"
 )
 
-
 const (
 	MessagePrefix = "WsPrefix:"
 )
 
-type  WebsocketAgent struct {
+type WebsocketAgent struct {
 	NetAgentBase
-	client *websocket.Conn
-	reqChan chan string
-	OnPing func(string) error
-	OnMessage func(*WebsocketAgent, string) //收到消息回调
-	OnSend func(*WebsocketAgent, int, string)    //发送消息回调
-	OnClose func(*WebsocketAgent)
-	OnConnected func()                          //连接被断开回调
-	errConn error
-	sendElapse int				//发送消息时间间隔 单位ms 用于限频
+	client      *websocket.Conn
+	reqChan     chan string
+	OnPing      func(string) error
+	OnPong      func(string) error
+	OnMessage   func(*WebsocketAgent, string)      //收到消息回调
+	OnSend      func(*WebsocketAgent, int, string) //发送消息回调
+	OnClose     func(*WebsocketAgent)
+	OnConnected func() //连接被断开回调
+	errConn     error
+	sendElapse  int //发送消息时间间隔 单位ms 用于限频
+	sendCache   []string
 }
 
 func NewWebsocketAgent(host string, port uint, path string, isSecure bool, elapse int) *WebsocketAgent {
@@ -56,23 +58,28 @@ func NewWebsocketAgent(host string, port uint, path string, isSecure bool, elaps
 
 	ret := &WebsocketAgent{
 		NetAgentBase: NetAgentBase{
-			URL: rawUrl,
-			isAlive: false,
-			timeout: 20,
+			URL:      rawUrl,
+			isAlive:  false,
+			timeout:  1000,
 			isClosed: false,
 		},
-		reqChan: make(chan string, 128),
-		sendElapse: elapse ,
+		reqChan:    make(chan string, 128),
+		sendCache:  make([]string, 0, 16),
+		sendElapse: elapse,
 	}
 
 	return ret
 }
 
-func (ws *WebsocketAgent)SetPingHandler(handler func(string) error) {
+func (ws *WebsocketAgent) SetPingHandler(handler func(string) error) {
 	ws.client.SetPingHandler(handler)
 }
 
-func (ws *WebsocketAgent)SetCloseHandler(handler func(code int, text string)error) {
+func (ws *WebsocketAgent) SetPongHandler(handler func(string) error) {
+	ws.client.SetPongHandler(handler)
+}
+
+func (ws *WebsocketAgent) SetCloseHandler(handler func(code int, text string) error) {
 	ws.client.SetCloseHandler(handler)
 }
 
@@ -84,7 +91,9 @@ func (ws *WebsocketAgent) Connect() {
 			}
 
 			if !ws.isAlive && !ws.isClosed {
-				ws.dial()
+				if err := ws.dial(); nil != err {
+					logutils.Warn("WebsocketAgent dial fatal", zap.Error(err))
+				}
 			}
 
 			time.Sleep(time.Duration(ws.timeout) * time.Millisecond)
@@ -92,6 +101,10 @@ func (ws *WebsocketAgent) Connect() {
 	}()
 	ws.doSendThread()
 	ws.doReceiveThread()
+}
+
+func (ws *WebsocketAgent) Reconnect() {
+	ws.isAlive = false
 }
 
 func (ws *WebsocketAgent) Close() error {
@@ -112,21 +125,27 @@ func (ws *WebsocketAgent) SendPongMsg(data []byte) {
 	messageType := fmt.Sprintf("%02d", websocket.PongMessage)
 	ws.reqChan <- MessagePrefix + messageType + string(data)
 }
+func (ws *WebsocketAgent) SendPingMsg(data []byte) {
+	messageType := fmt.Sprintf("%02d", websocket.PingMessage)
+	ws.reqChan <- MessagePrefix + messageType + string(data)
+}
 
 func (ws *WebsocketAgent) WaitForConnected() error {
 	var ret error
 	tick := time.Tick(100 * time.Millisecond)
 	for {
 		select {
-		case <- tick: {
-			if ws.isAlive {
-				return nil
+		case <-tick:
+			{
+				if ws.isAlive {
+					return nil
+				}
 			}
-		}
-		case <-time.After(30 * time.Second): {
-			ret = fmt.Errorf("wait for websocket connect time out, url: " + ws.URL.String())
-			return ret
-		}
+		case <-time.After(30 * time.Second):
+			{
+				ret = fmt.Errorf("wait for websocket connect time out 30s ", zap.String("url", ws.URL.String()), zap.Error(ws.errConn))
+				return ret
+			}
 		}
 	}
 }
@@ -146,9 +165,13 @@ func (ws *WebsocketAgent) dial() error {
 		ws.client.SetPingHandler(ws.OnPing)
 	}
 
+	if nil != ws.OnPong {
+		ws.client.SetPongHandler(ws.OnPong)
+	}
+
 	ws.client.SetCloseHandler(func(code int, text string) error {
 		ws.isAlive = false
-		if nil !=  ws.OnClose {
+		if nil != ws.OnClose {
 			ws.OnClose(ws)
 		}
 		message := websocket.FormatCloseMessage(code, "")
@@ -156,8 +179,11 @@ func (ws *WebsocketAgent) dial() error {
 		return nil
 	})
 
+	if nil != ws.OnConnected {
+		ws.OnConnected()
+	}
 	ws.isAlive = true
-	ws.OnConnected()
+
 	ws.errConn = nil
 
 	return nil
@@ -165,39 +191,61 @@ func (ws *WebsocketAgent) dial() error {
 
 func (ws *WebsocketAgent) doSendThread() {
 	//logutils.Warn("doSendThread", zap.String("url", ws.URL.String()))
-	go func(){
+	go func() {
 		for {
 			if ws.isClosed {
 				break
 			}
 
-			msg := <-ws.reqChan
-
-			messageType, sendMsg := ParseMessage(msg)
-			var err error
-			switch messageType {
-			case websocket.TextMessage, websocket.BinaryMessage:
-				err = ws.client.WriteMessage(messageType, []byte(sendMsg))
-				break
-			case websocket.PongMessage, websocket.PingMessage, websocket.CloseMessage:
-				err = ws.client.WriteControl(messageType, []byte(sendMsg), time.Now().Add(time.Second))
-				break
-			}
-
-			if nil != err {
-				ws.isAlive = false
-				logutils.Warn("doSendThread fatal", zap.String("url", ws.URL.String()), zap.Error(err))
+			if !ws.isAlive {
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
 
-			if nil != ws.OnSend {
-				ws.OnSend(ws, messageType, sendMsg)
+			msg := <-ws.reqChan
+
+			ws.sendCache = append(ws.sendCache, msg)
+
+			cnSuccess := 0
+			for index, rawMsg := range ws.sendCache {
+				if "" == rawMsg {
+					cnSuccess++
+					continue
+				}
+				messageType, sendMsg := ParseMessage(rawMsg)
+				var err error
+				switch messageType {
+				case websocket.TextMessage, websocket.BinaryMessage:
+					err = ws.client.WriteMessage(messageType, []byte(sendMsg))
+				case websocket.PongMessage, websocket.PingMessage, websocket.CloseMessage:
+					err = ws.client.WriteControl(messageType, []byte(sendMsg), time.Now().Add(time.Second))
+				}
+
+				if nil != err {
+					ws.isAlive = false
+					logutils.Warn("doSendThread fatal", zap.String("url", ws.URL.String()), zap.Error(err))
+					time.Sleep(100 * time.Millisecond)
+					break
+				}
+
+				//发送成功清空字符串
+				ws.sendCache[index] = ""
+
+				if nil != ws.OnSend {
+					ws.OnSend(ws, messageType, sendMsg)
+				}
+				if ws.sendElapse > 0 {
+					elapse := time.Duration(ws.sendElapse) * time.Millisecond
+					time.Sleep(elapse)
+				}
+				cnSuccess++
 			}
-			if ws.sendElapse > 0 {
-				elapse := time.Duration(ws.sendElapse) * time.Millisecond
-				time.Sleep( elapse )
+
+			//全部发送成功后清空缓存
+			if cnSuccess == len(ws.sendCache) {
+				ws.sendCache = ws.sendCache[0:0]
 			}
+
 		}
 	}()
 }
@@ -206,7 +254,7 @@ func (ws *WebsocketAgent) doReceiveThread() {
 	//logutils.Warn("doReceiveThread", zap.String("url", ws.URL.String()))
 	go func() {
 		for {
-			if ws.isClosed{
+			if ws.isClosed {
 				break
 			}
 			if !ws.isAlive {
@@ -227,13 +275,13 @@ func (ws *WebsocketAgent) doReceiveThread() {
 }
 
 func ParseMessage(msg string) (int, string) {
-	prefix := msg[0: len(MessagePrefix)]
+	prefix := msg[0:len(MessagePrefix)]
 	if prefix != MessagePrefix {
 		return 0, ""
 	}
 
 	remain := msg[len(MessagePrefix):]
-	msgType := remain[0: 2]
+	msgType := remain[0:2]
 	messageType, _ := strconv.ParseInt(msgType, 10, 64)
 	remain = remain[2:]
 

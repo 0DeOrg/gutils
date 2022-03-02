@@ -14,7 +14,7 @@ import (
 
 var (
 	loggerModule ILogger
-	logInit   	= false
+	logInit      = false
 
 	errorNotInit = fmt.Errorf("log module not inited")
 )
@@ -38,6 +38,10 @@ func InitLogger(config interface{}) {
 
 		logInit = true
 	}
+}
+
+func Logger() ILogger {
+	return loggerModule.(*ZapLogModule).logger
 }
 
 func Info(msg string, fields ...zap.Field) {

@@ -9,12 +9,11 @@ package daoutils
 
 import "fmt"
 
-
 type IDaoClient interface {
 	Connect() error
 	DSN() string
 }
 
 var (
-	ErrorNilGormDatabase = fmt.Errorf("gorm database is nil")
+	ErrorNilGormDatabase = fmt.Errorf("daoutils error: gorm database is nil")
 )

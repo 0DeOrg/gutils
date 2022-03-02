@@ -1,4 +1,5 @@
 package network
+
 /**
  * @Author: lee
  * @Description:
@@ -7,6 +8,8 @@ package network
  */
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
@@ -17,12 +20,11 @@ import (
 	"time"
 )
 
-
 type HttpHost struct {
-	Host string
-	Port int
+	Host    string
+	Port    int
 	IsHttps bool
-	CAPath string
+	CAPath  string
 }
 
 type HttpAgent struct {
@@ -99,7 +101,7 @@ func (h *HttpAgent) SimpleGet(path string, params map[string]string) (string, er
 	return string(body), nil
 }
 
-func (h *HttpAgent) SimplePost(path string, reqBody string, params map[string]string) (string, error){
+func (h *HttpAgent) SimplePost(path string, reqBody string, params map[string]string) (string, error) {
 	url := h.URL.String() + path
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(reqBody))
 	if err != nil {
@@ -212,7 +214,7 @@ type transport struct {
 	cxt *gin.Context
 }
 
-func (t *transport) RoundTrip (req *http.Request) (resp *http.Response, err error) {
+func (t *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	resp, err = t.RoundTripper.RoundTrip(req)
 	if nil != err {
 		return nil, err
@@ -235,18 +237,16 @@ func (t *transport) RoundTrip (req *http.Request) (resp *http.Response, err erro
 	resp.ContentLength = int64(len(resBody))
 	resp.Header.Set("Content-Length", strconv.Itoa(len(resBody)))
 
-
 	return resp, err
 }
 
-func HttpForward (w http.ResponseWriter, req *http.Request, targetHost *HttpHost, c *gin.Context) error {
+func HttpForward(w http.ResponseWriter, req *http.Request, targetHost *HttpHost, c *gin.Context) error {
 	host := ""
 	if targetHost.IsHttps {
 		host = "https://" + targetHost.Host
 	} else {
 		host += "http://" + targetHost.Host
 	}
-
 
 	if 0 != targetHost.Port {
 		host += ":" + strconv.Itoa(targetHost.Port)
@@ -277,3 +277,73 @@ func HttpForward (w http.ResponseWriter, req *http.Request, targetHost *HttpHost
 	return nil
 }
 
+func HttpGetJson(url string, reqBody string) (string, error) {
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if "" != reqBody {
+		reqMap := map[string]string{}
+		err = json.Unmarshal([]byte(reqBody), &reqMap)
+		if nil != err {
+			//传入的必须是map[string]string
+			return "", err
+		}
+		q := req.URL.Query()
+		for k, v := range reqMap {
+			q.Add(k, v)
+		}
+
+		req.URL.RawQuery = q.Encode()
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
+func HttpPostJson(url string, reqBody string) (string, error) {
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(reqBody))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if 200 != resp.StatusCode {
+		return "", errors.New(string(body))
+	}
+
+	return string(body), nil
+}
