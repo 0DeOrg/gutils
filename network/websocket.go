@@ -92,7 +92,7 @@ func (ws *WebsocketAgent) Connect() {
 
 			if !ws.isAlive && !ws.isClosed {
 				if err := ws.dial(); nil != err {
-					logutils.Warn("WebsocketAgent dial fatal", zap.Error(err))
+					logutils.Warn("WebsocketAgent dial fatal", zap.Error(err), zap.String("url", ws.URL.String()))
 				}
 			}
 
@@ -116,16 +116,28 @@ func (ws *WebsocketAgent) Close() error {
 }
 
 func (ws *WebsocketAgent) Send(msg string) {
+	//断线了就不发了减少sendMsg阻塞
+	if !ws.isAlive {
+		return
+	}
 	messageType := fmt.Sprintf("%02d", websocket.TextMessage)
 
 	ws.reqChan <- MessagePrefix + messageType + msg
 }
 
 func (ws *WebsocketAgent) SendPongMsg(data []byte) {
+	//断线了就不发了减少sendMsg阻塞
+	if !ws.isAlive {
+		return
+	}
 	messageType := fmt.Sprintf("%02d", websocket.PongMessage)
 	ws.reqChan <- MessagePrefix + messageType + string(data)
 }
 func (ws *WebsocketAgent) SendPingMsg(data []byte) {
+	//断线了就不发了减少sendMsg阻塞
+	if !ws.isAlive {
+		return
+	}
 	messageType := fmt.Sprintf("%02d", websocket.PingMessage)
 	ws.reqChan <- MessagePrefix + messageType + string(data)
 }
@@ -182,10 +194,12 @@ func (ws *WebsocketAgent) dial() error {
 		return nil
 	})
 
+	//将alive设置提前，不能放在ws.OnConnected()后面，里面可能会发送消息，如果管道满了导致阻塞alive将不被设置，发送协程因alive未设置不发送消息了导致死锁了
+	ws.isAlive = true
+
 	if nil != ws.OnConnected {
 		ws.OnConnected()
 	}
-	ws.isAlive = true
 
 	ws.errConn = nil
 
@@ -228,6 +242,10 @@ func (ws *WebsocketAgent) doSendThread() {
 					ws.isAlive = false
 					logutils.Warn("doSendThread fatal", zap.String("url", ws.URL.String()), zap.Error(err))
 					time.Sleep(100 * time.Millisecond)
+					//控制消息不用重发了
+					if messageType != websocket.TextMessage && messageType != websocket.BinaryMessage {
+						ws.sendCache[index] = ""
+					}
 					break
 				}
 
