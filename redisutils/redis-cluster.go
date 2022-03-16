@@ -19,12 +19,12 @@ type ClusterCfg struct {
 	Pwd   string   `json:"pwd"     yaml:"pwd"   mapstructure:"pwd"`
 }
 
-type redisCluster struct {
+type RedisCluster struct {
 	cfg    ClusterCfg
 	Client *redis.ClusterClient
 }
 
-func NewRedisCluster(cfg ClusterCfg) (*redisCluster, error) {
+func NewRedisCluster(cfg ClusterCfg) (*RedisCluster, error) {
 
 	opt := redis.ClusterOptions{
 		Addrs:    cfg.Addrs,
@@ -38,7 +38,7 @@ func NewRedisCluster(cfg ClusterCfg) (*redisCluster, error) {
 		return nil, fmt.Errorf("NewRedisCluster fatal, ping failed, err: %s", err.Error())
 	}
 
-	ret := &redisCluster{
+	ret := &RedisCluster{
 		cfg:    cfg,
 		Client: client,
 	}
@@ -46,7 +46,7 @@ func NewRedisCluster(cfg ClusterCfg) (*redisCluster, error) {
 	return ret, nil
 }
 
-func (r *redisCluster) ReleaseResource() (err error) {
+func (r *RedisCluster) ReleaseResource() (err error) {
 	if nil != r.Client {
 		err = r.Client.Close()
 		return

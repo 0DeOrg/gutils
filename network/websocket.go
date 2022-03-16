@@ -60,7 +60,7 @@ func NewWebsocketAgent(host string, port uint, path string, isSecure bool, elaps
 		NetAgentBase: NetAgentBase{
 			URL:      rawUrl,
 			isAlive:  false,
-			timeout:  1000,
+			timeout:  5000,
 			isClosed: false,
 		},
 		reqChan:    make(chan string, 128),
