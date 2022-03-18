@@ -22,7 +22,7 @@ type RabbitMQConfig struct {
 	User     string `json:"user"     yaml:"user"   mapstructure:"user"`
 	Password string `json:"password"     yaml:"password"   mapstructure:"password"`
 	Address  string `json:"address"     yaml:"address"   mapstructure:"address"`
-	Path     string `json:"path"     yaml:"path"   mapstructure:"path"`
+	VHost    string `json:"vhost"     yaml:"vhost"   mapstructure:"vhost"`
 }
 
 type PublishContent struct {

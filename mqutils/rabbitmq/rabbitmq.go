@@ -10,6 +10,8 @@ package rabbitmq
 import (
 	"fmt"
 	"github.com/streadway/amqp"
+	"go.uber.org/zap"
+	"gutils/logutils"
 	"log"
 	"math/rand"
 	"time"
@@ -22,13 +24,15 @@ type RabbitMq struct {
 	Url         string
 	Connection  *amqp.Connection
 	channelPool []*amqp.Channel
+	publishCh   chan *PublishContent
 }
 
-func NewRabbitMq(user, pwd, address, vHost string) (*RabbitMq, error) {
-	url := fmt.Sprintf("amqp://%s:%s@%s/%s", user, pwd, address, vHost)
+func NewRabbitMq(cfg *RabbitMQConfig) (*RabbitMq, error) {
+	url := fmt.Sprintf("amqp://%s:%s@%s/%s", cfg.User, cfg.Password, cfg.Address, cfg.VHost)
 	ret := &RabbitMq{
 		Url:         url,
-		channelPool: make([]*amqp.Channel, MAX_POOL_LENGTH),
+		channelPool: make([]*amqp.Channel, 0, MAX_POOL_LENGTH),
+		publishCh:   make(chan *PublishContent, 10000),
 	}
 
 	err := ret.connect()
@@ -48,7 +52,7 @@ func (rq *RabbitMq) connect() error {
 		return err
 	}
 
-	for i := 0; i < cap(rq.channelPool); i++ {
+	for i := 0; i < MAX_POOL_LENGTH; i++ {
 		ch, err := conn.Channel()
 		if err != nil {
 			return err
@@ -73,6 +77,44 @@ func (rq *RabbitMq) getChannel() *amqp.Channel {
 
 func (rq *RabbitMq) ExchangeDeclare(name string, kind ExchangeKind, durable bool) error {
 	return rq.getChannel().ExchangeDeclare(name, string(kind), durable, false, false, false, nil)
+}
+
+func (rq *RabbitMq) QueueDeclare(name string) error {
+	_, err := rq.getChannel().QueueDeclare(name, false, false, false, false, nil)
+	return err
+}
+
+func (rq *RabbitMq) QueueBind(name, exchange, routingKey string) error {
+	return rq.getChannel().QueueBind(name, routingKey, exchange, false, nil)
+}
+
+func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
+	return rq.getChannel().Consume(name, "", false, false, false, false, nil)
+}
+
+func (rq *RabbitMq) Process() {
+	go func() {
+		for {
+			select {
+			case content := <-rq.publishCh:
+				_, err := rq.Publish(content, false)
+				if nil != err {
+					logutils.Error("RabbitMq Publish fatal", zap.Any("content", content), zap.Error(err))
+				}
+			}
+		}
+	}()
+
+}
+
+func (rq *RabbitMq) PublishContent(exchangeName string, routingKey string, content []byte) {
+	publishContent := &PublishContent{
+		ExchangeName: exchangeName,
+		RoutingKey:   routingKey,
+		Content:      content,
+	}
+
+	rq.publishCh <- publishContent
 }
 
 func (rq *RabbitMq) Publish(content *PublishContent, reliable bool) (confirmed bool, err error) {
