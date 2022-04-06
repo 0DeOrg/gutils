@@ -33,7 +33,7 @@ func InitLogger(config interface{}) {
 	if v, ok := config.(ZapConfig); ok {
 		loggerModule, err = newZapLogModule(v)
 		if nil != err {
-			panic(fmt.Errorf("zap log init fault"))
+			panic(fmt.Errorf("zap log init fault, err: %s", err.Error()))
 		}
 
 		logInit = true
