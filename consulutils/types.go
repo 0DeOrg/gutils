@@ -23,6 +23,11 @@ type ConsulConfig struct {
 	HealthPath string `mapstructure:"health-path"     json:"health-path"    yaml:"health-path"`
 }
 
+type ConsulFindCfg struct {
+	Name   string `mapstructure:"name"           json:"name"          yaml:"name"`
+	Secure bool   `mapstructure:"secure"           json:"secure"          yaml:"secure"`
+}
+
 type ServiceInstance struct {
 	InstanceId string
 	Name       string

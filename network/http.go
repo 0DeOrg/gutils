@@ -22,7 +22,7 @@ import (
 
 type HttpHost struct {
 	Host    string
-	Port    int
+	Port    uint
 	IsHttps bool
 	CAPath  string
 }
