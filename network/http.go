@@ -249,7 +249,7 @@ func HttpForward(w http.ResponseWriter, req *http.Request, targetHost *HttpHost,
 	}
 
 	if 0 != targetHost.Port {
-		host += ":" + strconv.Itoa(targetHost.Port)
+		host += ":" + strconv.FormatUint(uint64(targetHost.Port), 10)
 	}
 
 	remote, err := url.Parse(host)
