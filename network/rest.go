@@ -9,9 +9,12 @@ package network
 
 import (
 	"github.com/go-resty/resty/v2"
+	"golang.org/x/net/publicsuffix"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 type RestAgent struct {
@@ -38,7 +41,12 @@ func NewRestClient(host string, port uint, isHttps bool) (*RestAgent, error) {
 		return nil, err
 	}
 
-	client := resty.New()
+	cookieJar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	hc := http.Client{
+		Jar:     cookieJar,
+		Timeout: 20 * time.Second,
+	}
+	client := resty.NewWithClient(&hc)
 	ret := RestAgent{
 		NetAgentBase: NetAgentBase{
 			URL: url,
