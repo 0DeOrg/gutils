@@ -18,10 +18,12 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/philippseith/signalr v0.5.2
+	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/viper v1.8.1
 	github.com/streadway/amqp v1.0.0
 	go.uber.org/zap v1.17.0
+	golang.org/x/net v0.0.0-20211111160137-58aab5ef257a
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/gorm v1.21.15
 )
