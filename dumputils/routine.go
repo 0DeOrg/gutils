@@ -3,7 +3,8 @@ package dumputils
 import (
 	"bytes"
 	"errors"
-	"log"
+	"go.uber.org/zap"
+	"gutils/logutils"
 	"runtime"
 )
 
@@ -37,9 +38,12 @@ func HandlePanic(v ...interface{}) {
 		}
 
 		frame, _ := runtime.CallersFrames(pc).Next()
-		log.Println("rame function, file, line", frame.Function, frame.File, frame.Line)
+		//log.Println("rame function, file, line", frame.Function, frame.File, frame.Line)
 
-		log.Println("panic stack:\n "+stack+"\n", err.Error())
+		//log.Println("panic stack:\n "+stack+"\n", err.Error())
+
+		logutils.Error("rame function, file, line", zap.String("func", frame.Function), zap.String("file", frame.File), zap.Int("line", frame.Line))
+		logutils.Error("panic stack:\n "+stack+"\n", zap.Error(err))
 
 	}
 }
