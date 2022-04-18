@@ -13,66 +13,50 @@ import (
 	"go.uber.org/zap"
 	"gutils/logutils"
 	"log"
-	"math/rand"
 	"time"
 )
 
-const MAX_POOL_LENGTH = 4
+//channel 容量
+const capicity_publish_ch = 10000
+
+//最大堵塞数量
+const max_traffic_count = capicity_publish_ch / 2
 
 type RabbitMq struct {
-	Id          int
-	Url         string
-	Connection  *amqp.Connection
-	channelPool []*amqp.Channel
-	publishCh   chan *PublishContent
+	Id        int
+	Url       string
+	connProxy *connectionProxy
+	publishCh chan *PublishContent
 }
 
 func NewRabbitMq(cfg *RabbitMQConfig) (*RabbitMq, error) {
 	url := fmt.Sprintf("amqp://%s:%s@%s/%s", cfg.User, cfg.Password, cfg.Address, cfg.VHost)
 	ret := &RabbitMq{
-		Url:         url,
-		channelPool: make([]*amqp.Channel, 0, MAX_POOL_LENGTH),
-		publishCh:   make(chan *PublishContent, 10000),
+		Url:       url,
+		publishCh: make(chan *PublishContent, capicity_publish_ch),
 	}
 
-	err := ret.connect()
-	if nil != err {
-		return nil, err
-	}
+	conn := NewConnectionProxy(url)
+	ret.connProxy = conn
+
+	//time.AfterFunc(time.Minute, func() {
+	//	ret.connProxy.conn.Close()
+	//})
 	return ret, nil
 }
 
-func (rq *RabbitMq) connect() error {
-	if nil != rq.Connection {
-		rq.Connection.Close()
-	}
-
-	conn, err := amqp.Dial(rq.Url)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < MAX_POOL_LENGTH; i++ {
-		ch, err := conn.Channel()
-		if err != nil {
-			return err
-		}
-
-		rq.channelPool = append(rq.channelPool, ch)
-	}
-	rq.Connection = conn
-
+func (rq *RabbitMq) Close() error {
+	rq.connProxy.done <- struct{}{}
 	return nil
 }
 
-func (rq *RabbitMq) Close() error {
-	return rq.Connection.Close()
+func (rq *RabbitMq) WaitForFirstConnect() {
+	rq.connProxy.waitForFirstConnect()
 }
 
 func (rq *RabbitMq) getChannel() *amqp.Channel {
-	i := rand.Intn(MAX_POOL_LENGTH)
-	ch := rq.channelPool[i]
-	return ch
+
+	return rq.connProxy.getUnusedChannel()
 }
 
 func (rq *RabbitMq) ExchangeDeclare(name string, kind ExchangeKind, durable bool) error {
@@ -97,10 +81,49 @@ func (rq *RabbitMq) Process() {
 		for {
 			select {
 			case content := <-rq.publishCh:
-				_, err := rq.Publish(content, false)
-				if nil != err {
-					logutils.Error("RabbitMq Publish fatal", zap.Any("content", content), zap.Error(err))
+				for {
+					ch := rq.getChannel()
+					if nil == ch {
+						time.Sleep(time.Second)
+						continue
+					}
+
+					_, err := rq.Publish(content, false, ch)
+					if nil != err {
+						logutils.Error("RabbitMq Publish fatal", zap.Any("content", content), zap.Error(err))
+
+						//当达到最大堵塞数量时，不堵塞了 防止影响正常流程，mq推送暂时就不保证了
+						if len(rq.publishCh) > max_traffic_count {
+							logutils.Warn("RabbitMq publish has reach max traffic count", zap.Int("traffic", len(rq.publishCh)))
+							break
+						}
+						success := false
+						for idx := 0; idx < maxChannelCountPerConnection-1; idx++ {
+							ch = rq.getChannel()
+							if nil == ch {
+								time.Sleep(time.Second)
+								continue
+							}
+							_, err = rq.Publish(content, false, ch)
+							if nil == err {
+								success = true
+								break
+							} else {
+								logutils.Error("RabbitMq publish retry failed", zap.Int("retry", idx+1))
+							}
+						}
+
+						if !success {
+							time.Sleep(time.Second)
+							continue
+						} else {
+							break
+						}
+					} else {
+						break
+					}
 				}
+
 			}
 		}
 	}()
@@ -117,13 +140,14 @@ func (rq *RabbitMq) PublishContent(exchangeName string, routingKey string, conte
 	rq.publishCh <- publishContent
 }
 
-func (rq *RabbitMq) Publish(content *PublishContent, reliable bool) (confirmed bool, err error) {
+func (rq *RabbitMq) Publish(content *PublishContent, reliable bool, amqpChannel *amqp.Channel) (confirmed bool, err error) {
+	if nil == amqpChannel {
+		return false, fmt.Errorf("channel is not ready")
+	}
 	contentType := content.ContentType
 	if "" == contentType {
 		contentType = "text/json"
 	}
-
-	amqpChannel := rq.getChannel()
 
 	if reliable {
 		err = amqpChannel.Confirm(false)

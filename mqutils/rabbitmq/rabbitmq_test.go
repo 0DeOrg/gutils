@@ -13,11 +13,17 @@ import (
 )
 
 func Test_Publish(t *testing.T) {
-	mq, err := NewRabbitMq("lee", "956443", "localhost:5672", "/")
+	cfg := &RabbitMQConfig{
+		User:     "admin",
+		Password: "QGgRlqdMXdGu",
+		Address:  "192.168.10.45:5672",
+		VHost:    "/",
+	}
+	mq, err := NewRabbitMq(cfg)
 	if nil != err {
 		log.Fatal(err.Error())
 	}
-	err = mq.ExchangeDeclare("test", ExchangeFanout, true)
+	err = mq.ExchangeDeclare("test.kline", ExchangeFanout, true)
 	if nil != err {
 		log.Fatal(err.Error())
 	}
