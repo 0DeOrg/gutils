@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"go.uber.org/zap"
+	"gutils/dumputils"
 	"gutils/logutils"
 	"log"
 	"time"
@@ -77,6 +78,7 @@ func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
 }
 
 func (rq *RabbitMq) Process() {
+	defer dumputils.HandlePanic()
 	go func() {
 		for {
 			select {
