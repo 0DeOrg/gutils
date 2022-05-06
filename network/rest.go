@@ -14,6 +14,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,10 +27,15 @@ var _ HttpInterface = (*RestAgent)(nil)
 
 func NewRestClient(host string, port uint, isHttps bool) (*RestAgent, error) {
 	hostUrl := ""
-	if isHttps {
-		hostUrl += "https://" + host
-	} else {
-		hostUrl += "http://" + host
+
+	trimHost := strings.TrimLeft(host, " ")
+
+	if !strings.HasPrefix(trimHost, "http") {
+		if isHttps {
+			hostUrl += "https://" + trimHost
+		} else {
+			hostUrl += "http://" + trimHost
+		}
 	}
 
 	if 0 != port {

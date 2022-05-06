@@ -89,6 +89,8 @@ func (p *connectionProxy) waitForFirstConnect() {
 		select {
 		case <-chProxy.flagCh:
 			logutils.Info("connectionProxy waitForFirstConnect success", zap.Int("id", idx))
+		case <-time.After(30 * time.Second):
+			logutils.Fatal("connectionProxy waitForFirstConnect timeout 30 seconds")
 		}
 	}
 }

@@ -40,10 +40,14 @@ const (
 
 func NewHttpClient(host string, port uint, isHttps bool) (*HttpAgent, error) {
 	hostUrl := ""
-	if isHttps {
-		hostUrl += "https://" + host
-	} else {
-		hostUrl += "http://" + host
+	trimHost := strings.TrimLeft(host, " ")
+
+	if !strings.HasPrefix(trimHost, "http") {
+		if isHttps {
+			hostUrl += "https://" + trimHost
+		} else {
+			hostUrl += "http://" + trimHost
+		}
 	}
 
 	if 0 != port {
