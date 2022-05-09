@@ -79,15 +79,23 @@ func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
 
 func (rq *RabbitMq) Process() {
 	defer dumputils.HandlePanic()
+	idx := 0
 	go func() {
 		for {
 			select {
 			case content := <-rq.publishCh:
+				idx++
 				for {
 					ch := rq.getChannel()
 					if nil == ch {
 						time.Sleep(time.Second)
 						continue
+					}
+
+					//每100次打一次日志
+					if 100 == idx {
+						logutils.Info("mqpublish 100 times", zap.Int("ch len", len(rq.publishCh)),
+							zap.String("content", string(content.Content)))
 					}
 
 					_, err := rq.Publish(content, false, ch)
