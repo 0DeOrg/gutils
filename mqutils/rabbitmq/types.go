@@ -114,6 +114,7 @@ func (p *connectionProxy) getUnusedChannel() *amqp.Channel {
 	for i := 0; i < maxChannelCountPerConnection; i++ {
 		idx = (p.chOffset + 1) % maxChannelCountPerConnection
 		if p.channelPool[idx].inited {
+			p.chOffset = idx
 			return p.channelPool[idx].ch
 		}
 	}
