@@ -172,7 +172,7 @@ func (rq *RabbitMq) Publish(content *PublishContent, reliable bool, amqpChannel 
 		}
 	}
 
-	err = amqpChannel.Publish(content.ExchangeName, content.RoutingKey, true, false,
+	err = amqpChannel.Publish(content.ExchangeName, content.RoutingKey, false, false,
 		amqp.Publishing{
 			ContentType: contentType,
 			Timestamp:   time.Now(),
