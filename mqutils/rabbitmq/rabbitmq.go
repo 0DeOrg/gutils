@@ -96,6 +96,7 @@ func (rq *RabbitMq) Process() {
 					if 100 == idx {
 						logutils.Info("mqpublish 100 times", zap.Int("ch len", len(rq.publishCh)),
 							zap.String("content", string(content.Content)))
+						idx = 0
 					}
 
 					_, err := rq.Publish(content, false, ch)
