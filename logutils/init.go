@@ -1,4 +1,4 @@
-package logger
+package logutils
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 var (
 	loggerModule ILogger
-	logInit   	= false
+	logInit      = false
 
 	errorNotInit = fmt.Errorf("log module not inited")
 )
@@ -25,6 +25,7 @@ type ILogger interface {
 	Warn(msg string, fields ...zap.Field)
 	Debug(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
+	DPanic(msg string, fields ...zap.Field)
 }
 
 func InitLogger(config interface{}) {
@@ -32,11 +33,15 @@ func InitLogger(config interface{}) {
 	if v, ok := config.(ZapConfig); ok {
 		loggerModule, err = newZapLogModule(v)
 		if nil != err {
-			panic(fmt.Errorf("zap log init fault"))
+			panic(fmt.Errorf("zap log init fault, err: %s", err.Error()))
 		}
 
 		logInit = true
 	}
+}
+
+func Logger() ILogger {
+	return loggerModule.(*ZapLogModule).logger
 }
 
 func Info(msg string, fields ...zap.Field) {
@@ -72,4 +77,11 @@ func Fatal(msg string, fields ...zap.Field) {
 		panic(errorNotInit)
 	}
 	loggerModule.Fatal(msg, fields...)
+}
+
+func DPanic(msg string, fields ...zap.Field) {
+	if !logInit {
+		panic(errorNotInit)
+	}
+	loggerModule.DPanic(msg, fields...)
 }

@@ -1,4 +1,4 @@
-package logger
+package logutils
 
 /**
  * @Author: lee
@@ -19,14 +19,14 @@ import (
 )
 
 type ZapConfig struct {
-	Directory 		string		`json:"directory"     yaml:"directory"   mapstructure:"directory"`
-	ShowLine 		bool		`json:"show-line"     yaml:"show-line"   mapstructure:"show-line"`
-	ZapLevel		string		`json:"zap-level"     yaml:"zap-level"   mapstructure:"zap-level"`
-	Archive 		string		`json:"archive"     yaml:"archive"       mapstructure:"archive"`
-	Format 			string		`json:"format"     yaml:"format"         mapstructure:"format"`
-	LinkName 		string		`json:"link-name"     yaml:"link-name"   mapstructure:"link-name"`
-	LogInConsole 	bool		`json:"log-in-console"     yaml:"log-in-console"    mapstructure:"log-in-console"`
-	EncodeLevel 	string		`json:"encode-level"     yaml:"encode-level"        mapstructure:"encode-level"`
+	Directory    string `json:"directory"     yaml:"directory"   mapstructure:"directory"`
+	ShowLine     bool   `json:"show-line"     yaml:"show-line"   mapstructure:"show-line"`
+	ZapLevel     string `json:"zap-level"     yaml:"zap-level"   mapstructure:"zap-level"`
+	Archive      string `json:"archive"     yaml:"archive"       mapstructure:"archive"`
+	Format       string `json:"format"     yaml:"format"         mapstructure:"format"`
+	LinkName     string `json:"link-name"     yaml:"link-name"   mapstructure:"link-name"`
+	LogInConsole bool   `json:"log-in-console"     yaml:"log-in-console"    mapstructure:"log-in-console"`
+	EncodeLevel  string `json:"encode-level"     yaml:"encode-level"        mapstructure:"encode-level"`
 }
 
 type ZapLogModule struct {
@@ -35,24 +35,48 @@ type ZapLogModule struct {
 }
 
 var _ ILogger = (*ZapLogModule)(nil)
+
 func (m *ZapLogModule) Info(msg string, fields ...zap.Field) {
 	m.logger.Info(msg, fields...)
+}
+
+func (m *ZapLogModule) Infof(format string, vals ...interface{}) {
+
 }
 
 func (m *ZapLogModule) Error(msg string, fields ...zap.Field) {
 	m.logger.Error(msg, fields...)
 }
 
+func (m *ZapLogModule) Errorf(format string, vals ...interface{}) {
+
+}
+
 func (m *ZapLogModule) Warn(msg string, fields ...zap.Field) {
 	m.logger.Warn(msg, fields...)
+}
+
+func (m *ZapLogModule) Warnf(format string, vals ...interface{}) {
+
 }
 
 func (m *ZapLogModule) Debug(msg string, fields ...zap.Field) {
 	m.logger.Debug(msg, fields...)
 }
 
+func (m *ZapLogModule) Debugf(format string, vals ...interface{}) {
+
+}
+
 func (m *ZapLogModule) Fatal(msg string, fields ...zap.Field) {
 	m.logger.Fatal(msg, fields...)
+}
+
+func (m *ZapLogModule) Fatalf(format string, vals ...interface{}) {
+
+}
+func (m *ZapLogModule) DPanic(msg string, fields ...zap.Field) {
+	m.logger.DPanic(msg, fields...)
 }
 
 var zapConfig ZapConfig
@@ -104,6 +128,7 @@ func newZapLogger(config ZapConfig) (logger *zap.Logger, err error) {
 	}
 	if zapConfig.ShowLine {
 		logger = logger.WithOptions(zap.AddCaller())
+		logger = logger.WithOptions(zap.AddCallerSkip(2))
 	}
 
 	return logger, nil
@@ -163,7 +188,7 @@ func CustomTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 // zap logger中加入file-rotatelogs
 func GetWriteSyncer() (zapcore.WriteSyncer, error) {
 	var filePath string
-	filePath = path.Join(zapConfig.Directory, zapConfig.Archive +"-%Y-%m-%d.log")
+	filePath = path.Join(zapConfig.Directory, zapConfig.Archive+"-%Y-%m-%d.log")
 
 	var linkName rotatelogs.Option
 	if zapConfig.Archive == "" {
