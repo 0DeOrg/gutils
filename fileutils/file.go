@@ -1,6 +1,8 @@
-package filesutils
+package fileutils
 
-import "os"
+import (
+	"os"
+)
 
 /**
  * @Author: lee
@@ -18,10 +20,10 @@ func PathExist(filePath string) bool {
 	return false
 }
 
-func CreateDirectoryIfNotExist(pathName string) error {
+func CreateDirectoryIfNotExist(pathName string, mode os.FileMode) error {
 	exist := PathExist(pathName)
 	if !exist {
-		err := os.MkdirAll(pathName, os.ModePerm)
+		err := os.MkdirAll(pathName, mode)
 		if err != nil {
 			return err
 		}

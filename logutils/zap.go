@@ -12,7 +12,7 @@ import (
 	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gutils/filesutils"
+	"gutils/fileutils"
 	"os"
 	"path"
 	"time"
@@ -97,7 +97,7 @@ func newZapLogModule(config ZapConfig) (*ZapLogModule, error) {
 
 func newZapLogger(config ZapConfig) (logger *zap.Logger, err error) {
 	zapConfig = config
-	if err = filesutils.CreateDirectoryIfNotExist(zapConfig.Directory); nil != err {
+	if err = fileutils.CreateDirectoryIfNotExist(zapConfig.Directory, os.ModePerm); nil != err {
 		return nil, err
 	}
 

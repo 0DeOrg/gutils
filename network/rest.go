@@ -36,6 +36,8 @@ func NewRestClient(host string, port uint, isHttps bool) (*RestAgent, error) {
 		} else {
 			hostUrl += "http://" + trimHost
 		}
+	} else {
+		hostUrl = trimHost
 	}
 
 	if 0 != port {

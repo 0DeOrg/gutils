@@ -48,6 +48,8 @@ func NewHttpClient(host string, port uint, isHttps bool) (*HttpAgent, error) {
 		} else {
 			hostUrl += "http://" + trimHost
 		}
+	} else {
+		hostUrl = trimHost
 	}
 
 	if 0 != port {
