@@ -13,6 +13,9 @@ require (
 	github.com/go-resty/resty/v2 v2.6.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/consul/api v1.10.1
+	github.com/hashicorp/go-hclog v0.12.0
+	github.com/hashicorp/raft v1.3.9
+	github.com/hashicorp/raft-boltdb v0.0.0-20220329195025-15018e9b97e0
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/juju/ratelimit v1.0.1
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
@@ -27,3 +30,4 @@ require (
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/gorm v1.21.15
 )
+
