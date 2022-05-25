@@ -8,6 +8,7 @@ package network
  */
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/net/publicsuffix"
 	"net/http"
@@ -73,6 +74,10 @@ func (h *RestAgent) SimpleGet(path string, params map[string]string) (string, er
 	res, err := h.Client.R().SetQueryParams(params).Get(url)
 	if nil != err {
 		return "", err
+	}
+
+	if res.StatusCode() != 200 {
+		return string(res.Body()), fmt.Errorf("%s", string(res.Body()))
 	}
 
 	return string(res.Body()), nil

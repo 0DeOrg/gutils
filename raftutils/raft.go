@@ -12,9 +12,14 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
+	"go.uber.org/zap"
+	"gutils/dumputils"
+	"gutils/fileutils"
+	"gutils/logutils"
 	"net"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 )
 
@@ -24,6 +29,9 @@ type RaftNode struct {
 	leaderNotifyCh chan bool
 	logger         hclog.Logger
 	bootstrap      bool
+	LocalID        raft.ServerID
+	LocalAddress   raft.ServerAddress
+	isLeader       int32
 }
 
 func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error) {
@@ -43,6 +51,10 @@ func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error
 	transport, err := raft.NewTCPTransport(tcpAddr.String(), tcpAddr, 3, 3*time.Second, os.Stderr)
 	if nil != err {
 		return nil, fmt.Errorf("NewRaftNode, NewTCPTransport err: %s", err.Error())
+	}
+
+	if err = fileutils.CreateDirectoryIfNotExist(options.storeDir, os.ModePerm); nil != err {
+		logutils.Fatal("NewRaftNode create dir fatal", zap.Error(err))
 	}
 
 	//快照存储，用来存储节点的快照信息
@@ -75,6 +87,8 @@ func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error
 		fsm:            fsm,
 		leaderNotifyCh: notifyCh,
 		logger:         logger,
+		LocalID:        defaultCfg.LocalID,
+		LocalAddress:   transport.LocalAddr(),
 	}
 
 	//是否引导启动，只有一个是作为引导启动的
@@ -92,13 +106,57 @@ func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error
 		ret.bootstrap = true
 	}
 
+	//aggressive consume notifyCh, 为避免raft堵塞需要一直消费
+	go func() {
+		defer dumputils.HandlePanic()
+		for {
+			select {
+			case isLeader := <-notifyCh:
+				if isLeader {
+					atomic.StoreInt32(&ret.isLeader, 1)
+					logutils.Warn("node is leader", zap.String("address", string(ret.LocalAddress)))
+				} else {
+					atomic.StoreInt32(&ret.isLeader, 0)
+					logutils.Warn("node has lose leader", zap.String("address", string(ret.LocalAddress)))
+				}
+			}
+		}
+
+	}()
+
 	return ret, nil
 }
 
-func (r *RaftNode) JoinCluster(serverId string, address string) error {
+// JoinCluster
+/* @Description: 加入cluster，如果当前节点不是leader 返回leader id， 即leader 监听此接口的地址（id 起了这么个作用）。
+ * @param serverId string
+ * @param address string
+ * @return string
+ * @return error
+ */
+func (r *RaftNode) JoinCluster(serverId string, address string) (string, error) {
 	future := r.raft.AddVoter(raft.ServerID(serverId), raft.ServerAddress(address), 0, 10*time.Second)
 	if err := future.Error(); nil != err {
-		return fmt.Errorf("JoinCluster err: %s", err.Error())
+		_, leadId := r.raft.LeaderWithID()
+		return string(leadId), fmt.Errorf("JoinCluster err: %s", err.Error())
 	}
-	return nil
+	return string(r.LocalID), nil
+}
+
+// IsLeader
+/* @Description: 判断当前节点是否leader节点
+ * @return bool
+ */
+func (r *RaftNode) IsLeader() bool {
+	r.raft.GetConfiguration()
+	return 1 == atomic.LoadInt32(&r.isLeader)
+}
+
+func (r *RaftNode) ServerList() []raft.Server {
+	future := r.raft.GetConfiguration()
+	if nil != future.Error() {
+		return nil
+	}
+
+	return future.Configuration().Servers
 }

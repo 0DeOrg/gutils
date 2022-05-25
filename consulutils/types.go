@@ -57,10 +57,7 @@ func (c *consulServiceRegistry) register(instance *ServiceInstance) error {
 	}
 
 	if nil != instance.Metadata {
-		var tags []string
-		for key, value := range instance.Metadata {
-			tags = append(tags, key+"="+value)
-		}
+		reg.Meta = instance.Metadata
 	}
 
 	reg.Tags = tags
