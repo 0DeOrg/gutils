@@ -168,6 +168,6 @@ func (r *RaftNode) Apply(data []byte, timeout time.Duration) raft.ApplyFuture {
 	return r.raft.Apply(data, timeout)
 }
 
-func (r *RaftNode) FSMApply(data []byte) interface{} {
-	return r.fsm.Apply(&raft.Log{Data: data})
-}
+//func (r *RaftNode) FSMApply(data []byte) interface{} {
+//	return r.fsm.Apply(&raft.Log{Data: data})
+//}
