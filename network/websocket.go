@@ -166,7 +166,7 @@ func (ws *WebsocketAgent) dial() error {
 	var err error
 	var client *websocket.Conn
 	urlStr := ws.URL.String()
-	logutils.Warn("dial websocket", zap.String("url", ws.URL.String()))
+	logutils.Warn("dial websocket", zap.String("url", urlStr))
 	client, _, err = websocket.DefaultDialer.Dial(urlStr, nil)
 
 	if nil != err {

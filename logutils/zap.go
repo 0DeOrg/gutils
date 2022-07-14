@@ -29,6 +29,17 @@ type ZapConfig struct {
 	EncodeLevel  string `json:"encode-level"     yaml:"encode-level"        mapstructure:"encode-level"`
 }
 
+var DefaultZapConfig = ZapConfig{
+	Directory:    "log",
+	ZapLevel:     "info",
+	Archive:      "log",
+	Format:       "console",
+	LinkName:     "log/latest_log",
+	LogInConsole: true,
+	EncodeLevel:  "LowercaseColorLevelEncoder",
+	ShowLine:     true,
+}
+
 type ZapLogModule struct {
 	logger *zap.Logger
 	config ZapConfig
