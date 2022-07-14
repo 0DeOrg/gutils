@@ -31,6 +31,10 @@ type options struct {
 	bootstrap      bool          // start as master or not
 }
 
+func (o *options) ServerID() raft.ServerID {
+	return o.serverID
+}
+
 func NewOptions(raftCfg *RaftCfg, httpPort uint) (*options, error) {
 	host := raftCfg.Host
 	if "" == host {

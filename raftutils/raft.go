@@ -23,6 +23,8 @@ import (
 	"time"
 )
 
+var tag_leader int32
+
 type RaftNode struct {
 	raft           *raft.Raft
 	fsm            raft.FSM
@@ -31,10 +33,9 @@ type RaftNode struct {
 	bootstrap      bool
 	LocalID        raft.ServerID
 	LocalAddress   raft.ServerAddress
-	isLeader       int32
 }
 
-func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error) {
+func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 	logger := hclog.Default()
 	defaultCfg := raft.DefaultConfig()
 	defaultCfg.LocalID = options.serverID
@@ -58,7 +59,7 @@ func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error
 	}
 
 	//快照存储，用来存储节点的快照信息
-	snapshotStore, err := raft.NewFileSnapshotStoreWithLogger(options.storeDir, 2, logger)
+	snapshotStore, err := raft.NewFileSnapshotStoreWithLogger(options.storeDir, 100, logger)
 	if nil != err {
 		return nil, fmt.Errorf("NewRaftNode, snapshot store err: %s", err.Error())
 	}
@@ -74,8 +75,6 @@ func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error
 	if err != nil {
 		return nil, fmt.Errorf("NewRaftNode, stableStore err: %s", err.Error())
 	}
-
-	fsm := NewFSM(applyCallback)
 
 	localRaft, err := raft.NewRaft(defaultCfg, fsm, logStore, stableStore, snapshotStore, transport)
 	if nil != err {
@@ -113,10 +112,10 @@ func NewRaftNode(options *options, applyCallback FSMApplyFunc) (*RaftNode, error
 			select {
 			case isLeader := <-notifyCh:
 				if isLeader {
-					atomic.StoreInt32(&ret.isLeader, 1)
+					atomic.StoreInt32(&tag_leader, 1)
 					logutils.Warn("node is leader", zap.String("address", string(ret.LocalAddress)))
 				} else {
-					atomic.StoreInt32(&ret.isLeader, 0)
+					atomic.StoreInt32(&tag_leader, 0)
 					logutils.Warn("node has lose leader", zap.String("address", string(ret.LocalAddress)))
 				}
 			}
@@ -147,9 +146,13 @@ func (r *RaftNode) JoinCluster(serverId string, address string) (string, error) 
 /* @Description: 判断当前节点是否leader节点
  * @return bool
  */
-func (r *RaftNode) IsLeader() bool {
-	r.raft.GetConfiguration()
-	return 1 == atomic.LoadInt32(&r.isLeader)
+func IsLeader() bool {
+	return 1 == atomic.LoadInt32(&tag_leader)
+}
+
+func (r *RaftNode) LeaderWithId() (string, string) {
+	addr, id := r.raft.LeaderWithID()
+	return string(addr), string(id)
 }
 
 func (r *RaftNode) ServerList() []raft.Server {
@@ -159,4 +162,12 @@ func (r *RaftNode) ServerList() []raft.Server {
 	}
 
 	return future.Configuration().Servers
+}
+
+func (r *RaftNode) Apply(data []byte, timeout time.Duration) raft.ApplyFuture {
+	return r.raft.Apply(data, timeout)
+}
+
+func (r *RaftNode) FSMApply(data []byte) interface{} {
+	return r.fsm.Apply(&raft.Log{Data: data})
 }
