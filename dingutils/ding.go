@@ -3,8 +3,9 @@ package dingutils
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
+	"gutils/logutils"
 	"gutils/network"
-	"log"
 	"strings"
 	"time"
 )
@@ -19,22 +20,32 @@ import (
 var dingBot *DingTalk
 
 type DingTalk struct {
-	Url string
+	Url    string
+	client *network.RestAgent
 }
 
 // 初始化告警结构
 
 func InitDingBot(url string) error {
 	if url == "" {
-		log.Fatal("init ding bot err. null ding url")
+		logutils.Warn("InitDingBot url is empty")
+		return fmt.Errorf("InitDingBot url is empty")
+	}
+	client, err := network.NewRestClient(url, 0, false)
+	if nil != err {
+		logutils.Fatal("InitDingBot url is unreachable", zap.String("url", url))
 	}
 	dingBot = &DingTalk{
-		Url: url,
+		Url:    url,
+		client: client,
 	}
 	return nil
 }
 
 func PostDingInfo(code int64, funcName string, params map[string]interface{}) error {
+	if nil == dingBot {
+		return fmt.Errorf("PostDingInfo dingBot is nil")
+	}
 	mapParam := params
 	if nil == mapParam {
 		mapParam = make(map[string]interface{})
@@ -46,6 +57,9 @@ func PostDingInfo(code int64, funcName string, params map[string]interface{}) er
 }
 
 func PostDingWarn(code int64, funcName string, params map[string]interface{}) error {
+	if nil == dingBot {
+		return fmt.Errorf("PostDingWarn dingBot is nil")
+	}
 	mapParam := params
 	if nil == mapParam {
 		mapParam = make(map[string]interface{})
@@ -57,6 +71,9 @@ func PostDingWarn(code int64, funcName string, params map[string]interface{}) er
 }
 
 func PostDingError(code int64, funcName string, params map[string]interface{}) error {
+	if nil == dingBot {
+		return fmt.Errorf("PostDingError dingBot is nil")
+	}
 	mapParam := params
 	if nil == mapParam {
 		mapParam = make(map[string]interface{})
@@ -91,7 +108,7 @@ func doPostDingMsg(kind string, code int64, params map[string]interface{}) error
 	content.WriteString("\n\n ###### ")
 	content.WriteString(time.Now().Format("2006-01-02 15:04:05") + "（UTC+8）")
 
-	_, err = Ding(content.String())
+	_, err = postDing(content.String())
 	if err != nil {
 		fmt.Errorf("ding err %s", err.Error())
 		return err
@@ -101,7 +118,7 @@ func doPostDingMsg(kind string, code int64, params map[string]interface{}) error
 }
 
 // 发送告警信息
-func Ding(text string) (string, error) {
+func postDing(text string) (string, error) {
 	// 构造告警请求
 	markDownInfo := &WarnDataReq{
 		Title: "告警信息",
@@ -119,7 +136,9 @@ func Ding(text string) (string, error) {
 	reqBody, _ := json.Marshal(warnReq)
 
 	// 发送告警信息
-	body, err := network.HttpPostJson(dingBot.Url, string(reqBody))
+	body, err := dingBot.client.SimplePost("", string(reqBody), nil)
+
+	//body, err := network.HttpPostJson(dingBot.Url, string(reqBody))
 	if err != nil {
 		return "", err
 	}

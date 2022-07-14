@@ -85,7 +85,9 @@ func (h *RestAgent) SimpleGet(path string, params map[string]string) (string, er
 
 func (h *RestAgent) SimplePost(path string, reqBody string, params map[string]string) (string, error) {
 	url := h.URL.String() + path
-	res, err := h.Client.R().SetQueryParams(params).SetBody(reqBody).Post(url)
+	r := h.Client.R()
+
+	res, err := r.SetQueryParams(params).SetBody(reqBody).SetHeader("Content-Type", "application/json").Post(url)
 	if nil != err {
 		return "", err
 	}
