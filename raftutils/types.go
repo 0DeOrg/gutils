@@ -10,7 +10,7 @@ package raftutils
 import (
 	"fmt"
 	"github.com/hashicorp/raft"
-	"gutils/network"
+	"gitlab.qihangxingchen.com/qt/gutils/network"
 	"path"
 	"strconv"
 )

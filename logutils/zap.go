@@ -10,9 +10,10 @@ package logutils
 import (
 	"fmt"
 	"github.com/lestrrat-go/file-rotatelogs"
-	"gitlab.qihangxingchen.com/qt/gutils/filesutils"
+	"gitlab.qihangxingchen.com/qt/gutils/fileutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"io/fs"
 	"os"
 	"path"
 	"time"
@@ -27,6 +28,17 @@ type ZapConfig struct {
 	LinkName     string `json:"link-name"     yaml:"link-name"   mapstructure:"link-name"`
 	LogInConsole bool   `json:"log-in-console"     yaml:"log-in-console"    mapstructure:"log-in-console"`
 	EncodeLevel  string `json:"encode-level"     yaml:"encode-level"        mapstructure:"encode-level"`
+}
+
+var DefaultZapConfig = ZapConfig{
+	Directory:    "log",
+	ZapLevel:     "info",
+	Archive:      "log",
+	Format:       "console",
+	LinkName:     "log/latest_log",
+	LogInConsole: true,
+	EncodeLevel:  "LowercaseColorLevelEncoder",
+	ShowLine:     true,
 }
 
 type ZapLogModule struct {
@@ -97,7 +109,7 @@ func newZapLogModule(config ZapConfig) (*ZapLogModule, error) {
 
 func newZapLogger(config ZapConfig) (logger *zap.Logger, err error) {
 	zapConfig = config
-	if err = filesutils.CreateDirectoryIfNotExist(zapConfig.Directory); nil != err {
+	if err = fileutils.CreateDirectoryIfNotExist(zapConfig.Directory, fs.ModePerm); nil != err {
 		return nil, err
 	}
 
