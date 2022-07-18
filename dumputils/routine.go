@@ -3,8 +3,8 @@ package dumputils
 import (
 	"bytes"
 	"errors"
+	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
-	"gutils/logutils"
 	"runtime"
 )
 

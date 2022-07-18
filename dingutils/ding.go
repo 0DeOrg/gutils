@@ -3,7 +3,7 @@ package dingutils
 import (
 	"encoding/json"
 	"fmt"
-	"gutils/network"
+	"gitlab.qihangxingchen.com/qt/gutils/network"
 	"log"
 	"strings"
 	"time"
@@ -93,8 +93,7 @@ func doPostDingMsg(kind string, code int64, params map[string]interface{}) error
 
 	_, err = Ding(content.String())
 	if err != nil {
-		fmt.Errorf("ding err %s", err.Error())
-		return err
+		return fmt.Errorf("doPostDingMsg|Ding err %s", err.Error())
 	}
 
 	return nil

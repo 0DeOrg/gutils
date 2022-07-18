@@ -1,4 +1,4 @@
-module gutils
+module gitlab.qihangxingchen.com/qt/gutils
 
 go 1.16
 

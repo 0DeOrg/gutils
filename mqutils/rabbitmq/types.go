@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/streadway/amqp"
+	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
-	"gutils/logutils"
 	"time"
 )
 

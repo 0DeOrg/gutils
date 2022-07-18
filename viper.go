@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"gutils/judge"
+	"gitlab.qihangxingchen.com/qt/gutils/judge"
 	"log"
 )
 

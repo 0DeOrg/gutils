@@ -9,7 +9,7 @@ package confutils
 
 import (
 	"github.com/apolloconfig/agollo/v4/env/config"
-	"gutils"
+	"gitlab.qihangxingchen.com/qt/gutils"
 )
 
 // LoadApolloConfigWhenStartup
