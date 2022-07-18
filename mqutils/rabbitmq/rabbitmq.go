@@ -10,9 +10,10 @@ package rabbitmq
 import (
 	"fmt"
 	"github.com/streadway/amqp"
+	"gitlab.qihangxingchen.com/qt/gutils/dumputils"
+	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
-	"gutils/dumputils"
-	"gutils/logutils"
+	"log"
 	"time"
 )
 
@@ -24,22 +25,19 @@ const max_traffic_count = capicity_publish_ch / 2
 
 type RabbitMq struct {
 	Id        int
+	Url       string
 	connProxy *connectionProxy
 	publishCh chan *PublishContent
 }
 
-func NewRabbitMq(cfg *RabbitMQConfig, reliable bool) (*RabbitMq, error) {
-	urls := make([]string, 0, len(cfg.AddressList))
-	for _, addr := range cfg.AddressList {
-		url := fmt.Sprintf("amqp://%s:%s@%s/%s", cfg.User, cfg.Password, addr, cfg.VHost)
-		urls = append(urls, url)
-	}
-
+func NewRabbitMq(cfg *RabbitMQConfig) (*RabbitMq, error) {
+	url := fmt.Sprintf("amqp://%s:%s@%s/%s", cfg.User, cfg.Password, cfg.Address, cfg.VHost)
 	ret := &RabbitMq{
+		Url:       url,
 		publishCh: make(chan *PublishContent, capicity_publish_ch),
 	}
 
-	conn := NewConnectionProxy(urls, reliable)
+	conn := NewConnectionProxy(url)
 	ret.connProxy = conn
 
 	//time.AfterFunc(time.Minute, func() {
@@ -57,44 +55,26 @@ func (rq *RabbitMq) WaitForFirstConnect() {
 	rq.connProxy.waitForFirstConnect()
 }
 
-func (rq *RabbitMq) getChannelProxy() *channelProxy {
+func (rq *RabbitMq) getChannel() *amqp.Channel {
+
 	return rq.connProxy.getUnusedChannel()
 }
 
 func (rq *RabbitMq) ExchangeDeclare(name string, kind ExchangeKind, durable bool) error {
-	chProxy := rq.getChannelProxy()
-	if nil == chProxy {
-		return fmt.Errorf("RabbitMq|ExchangeDeclare chProxy is nil")
-	}
-
-	return chProxy.ExchangeDeclare(name, kind, durable)
+	return rq.getChannel().ExchangeDeclare(name, string(kind), durable, false, false, false, nil)
 }
 
 func (rq *RabbitMq) QueueDeclare(name string) error {
-	chProxy := rq.getChannelProxy()
-	if nil == chProxy {
-		return fmt.Errorf("RabbitMq|QueueDeclare chProxy is nil")
-	}
-
-	return chProxy.QueueDeclare(name)
+	_, err := rq.getChannel().QueueDeclare(name, false, false, false, false, nil)
+	return err
 }
 
 func (rq *RabbitMq) QueueBind(name, exchange, routingKey string) error {
-	chProxy := rq.getChannelProxy()
-	if nil == chProxy {
-		return fmt.Errorf("RabbitMq|QueueBind chProxy is nil")
-	}
-
-	return chProxy.QueueBind(name, exchange, routingKey)
+	return rq.getChannel().QueueBind(name, routingKey, exchange, false, nil)
 }
 
 func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
-	chProxy := rq.getChannelProxy()
-	if nil == chProxy {
-		return nil, fmt.Errorf("RabbitMq|Consume chProxy is nil")
-	}
-
-	return chProxy.Consume(name)
+	return rq.getChannel().Consume(name, "", false, false, false, false, nil)
 }
 
 func (rq *RabbitMq) Process() {
@@ -106,25 +86,53 @@ func (rq *RabbitMq) Process() {
 			case content := <-rq.publishCh:
 				idx++
 				for {
-					confirmed, deliveryTag, err := rq.Publish(content)
-					if nil != err {
-						logutils.Error("RabbitMq|Process Publish fatal", zap.Any("content", content), zap.Error(err))
-						//当达到最大堵塞数量时，不堵塞了 防止影响正常流程，mq推送暂时就不保证了
-						if len(rq.publishCh) > max_traffic_count {
-							logutils.Warn("RabbitMq publish has reach max traffic count", zap.Int("traffic", len(rq.publishCh)))
-							break
-						}
+					ch := rq.getChannel()
+					if nil == ch {
 						time.Sleep(time.Second)
 						continue
 					}
 
 					//每100次打一次日志
 					if 100 == idx {
-						logutils.Info("RabbitMq|Process mq publish 100 times", zap.Int("traffic", len(rq.publishCh)),
-							zap.String("content", string(content.Content)), zap.Bool("confirmed", confirmed), zap.Uint64("deliveryTag", deliveryTag))
+						logutils.Info("mqpublish 100 times", zap.Int("ch len", len(rq.publishCh)),
+							zap.String("content", string(content.Content)))
 						idx = 0
 					}
-					break
+
+					_, err := rq.Publish(content, false, ch)
+					if nil != err {
+						logutils.Error("RabbitMq Publish fatal", zap.Any("content", content), zap.Error(err))
+
+						//当达到最大堵塞数量时，不堵塞了 防止影响正常流程，mq推送暂时就不保证了
+						if len(rq.publishCh) > max_traffic_count {
+							logutils.Warn("RabbitMq publish has reach max traffic count", zap.Int("traffic", len(rq.publishCh)))
+							break
+						}
+						success := false
+						for idx := 0; idx < maxChannelCountPerConnection-1; idx++ {
+							ch = rq.getChannel()
+							if nil == ch {
+								time.Sleep(time.Second)
+								continue
+							}
+							_, err = rq.Publish(content, false, ch)
+							if nil == err {
+								success = true
+								break
+							} else {
+								logutils.Error("RabbitMq publish retry failed", zap.Int("retry", idx+1))
+							}
+						}
+
+						if !success {
+							time.Sleep(time.Second)
+							continue
+						} else {
+							break
+						}
+					} else {
+						break
+					}
 				}
 
 			}
@@ -143,17 +151,38 @@ func (rq *RabbitMq) PublishContent(exchangeName string, routingKey string, conte
 	rq.publishCh <- publishContent
 }
 
-func (rq *RabbitMq) Publish(content *PublishContent) (confirmed bool, deliveryTag uint64, err error) {
-	chProxy := rq.getChannelProxy()
-	if nil == chProxy {
-		return false, 0, fmt.Errorf("RabbitMq|Publish chProxy is nil")
+func (rq *RabbitMq) Publish(content *PublishContent, reliable bool, amqpChannel *amqp.Channel) (confirmed bool, err error) {
+	if nil == amqpChannel {
+		return false, fmt.Errorf("channel is not ready")
+	}
+	contentType := content.ContentType
+	if "" == contentType {
+		contentType = "text/json"
 	}
 
-	return chProxy.Publish(content)
+	if reliable {
+		err = amqpChannel.Confirm(false)
+		confirm := make(chan amqp.Confirmation, 1)
+		if nil != err {
+			//不支持confirm
+			close(confirm)
+		} else {
+			confirm = amqpChannel.NotifyPublish(confirm)
+			defer confirmOne(err, confirm, &confirmed)
+		}
+	}
+
+	err = amqpChannel.Publish(content.ExchangeName, content.RoutingKey, false, false,
+		amqp.Publishing{
+			ContentType: contentType,
+			Timestamp:   time.Now(),
+			Body:        content.Content,
+		})
+	return
 }
 
-func confirmOne(err *error, confirm <-chan amqp.Confirmation, confirmed *bool, deliveryTag *uint64) {
-	if nil != *err {
+func confirmOne(err error, confirm <-chan amqp.Confirmation, confirmed *bool) {
+	if nil != err {
 		*confirmed = false
 		return
 	}
@@ -162,17 +191,15 @@ func confirmOne(err *error, confirm <-chan amqp.Confirmation, confirmed *bool, d
 		{
 			if ack.Ack {
 				*confirmed = true
-
-				*deliveryTag = ack.DeliveryTag
+				log.Println("confirmOne success tag:", ack.DeliveryTag)
 			} else {
 				*confirmed = false
-				*err = fmt.Errorf("confirmOne failed")
-				*deliveryTag = ack.DeliveryTag
+				log.Println("confirmOne fatal tag:", ack.DeliveryTag)
 			}
 		}
-	case <-time.After(3 * time.Second):
+	case <-time.After(5 * time.Second):
 		{
-			*err = fmt.Errorf("confirmOne timeout")
+			log.Println("confirmOne timeout")
 		}
 	}
 }

@@ -10,8 +10,8 @@ package network
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
-	"gutils/logutils"
 	"net/url"
 	"strconv"
 	"time"
@@ -155,7 +155,7 @@ func (ws *WebsocketAgent) WaitForConnected() error {
 			}
 		case <-time.After(30 * time.Second):
 			{
-				ret = fmt.Errorf("wait for websocket connect time out 30s ", zap.String("url", ws.URL.String()), zap.Error(ws.errConn))
+				ret = fmt.Errorf("wait for websocket connect time out 30s, url: %s, err: %s ", ws.URL.String(), ws.errConn.Error())
 				return ret
 			}
 		}
