@@ -1,8 +1,8 @@
 package redisutils
 
 import (
-	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
+	"gutils/logutils"
 	"testing"
 )
 

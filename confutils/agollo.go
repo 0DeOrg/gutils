@@ -14,7 +14,7 @@ import (
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
-	"gitlab.qihangxingchen.com/qt/gutils/convert"
+	"gutils/convert"
 	"log"
 )
 

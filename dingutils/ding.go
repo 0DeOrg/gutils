@@ -3,10 +3,9 @@ package dingutils
 import (
 	"encoding/json"
 	"fmt"
-
-	"gitlab.qihangxingchen.com/qt/gutils/logutils"
-	"gitlab.qihangxingchen.com/qt/gutils/network"
 	"go.uber.org/zap"
+	"gutils/logutils"
+	"gutils/network"
 	"strings"
 	"time"
 )
@@ -111,7 +110,8 @@ func doPostDingMsg(kind string, code int64, params map[string]interface{}) error
 
 	_, err = postDing(content.String())
 	if err != nil {
-		return fmt.Errorf("doPostDingMsg|Ding err %s", err.Error())
+		fmt.Errorf("ding err %s", err.Error())
+		return err
 	}
 
 	return nil

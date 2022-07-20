@@ -1,5 +1,4 @@
 package dumputils
-
 /**
  * @Author: lee
  * @Description:
@@ -14,8 +13,9 @@ import (
 	"syscall"
 )
 
+
 func RegisterSignal(cbExit func()) {
-	c := make(chan os.Signal, 1)
+	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT)
 	go func() {
 		for s := range c {

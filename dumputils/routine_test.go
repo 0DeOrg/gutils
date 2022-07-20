@@ -13,4 +13,5 @@ func Test_Dump(t *testing.T) {
 
 	panic("该结束了")
 
+	select {}
 }

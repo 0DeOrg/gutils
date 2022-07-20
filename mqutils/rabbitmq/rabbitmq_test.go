@@ -7,6 +7,7 @@ package rabbitmq
  * @Date: 2022/2/22 10:56 上午
  */
 import (
+	"encoding/json"
 	"log"
 	"testing"
 )
@@ -27,17 +28,17 @@ func Test_Publish(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 
-	//body := `{"key": "test123"}`
-	//reqBody, _ := json.Marshal(body)
-	//content := &PublishContent{
-	//	ExchangeName: "test",
-	//	Content:      reqBody,
-	//	RoutingKey:   "fanout no need",
-	//}
-	//confirmed, err := mq.Publish(content, false)
-	//if nil != err {
-	//	log.Fatal(err.Error())
-	//}
-	//
-	//log.Println("confirmed:", confirmed)
+	body := `{"key": "test123"}`
+	reqBody, _ := json.Marshal(body)
+	content := &PublishContent{
+		ExchangeName: "test",
+		Content:      reqBody,
+		RoutingKey:   "fanout no need",
+	}
+	confirmed, err := mq.Publish(content, false)
+	if nil != err {
+		log.Fatal(err.Error())
+	}
+
+	log.Println("confirmed:", confirmed)
 }

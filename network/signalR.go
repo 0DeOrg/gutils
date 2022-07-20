@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 )
 
 type agentHub struct {
@@ -56,7 +57,8 @@ func NewSignalRAgent(host string, path string, port uint, hubs []string, isSecur
 	client, err := signalr.NewClient(context.Background(),
 		signalr.WithReceiver(receiver),
 		signalr.WithAutoReconnect(func() (signalr.Connection, error) {
-			return signalr.NewHTTPConnection(context.TODO(), hostUrl)
+			creationCtx, _ := context.WithTimeout(context.Background(), 20*time.Second)
+			return signalr.NewHTTPConnection(creationCtx, hostUrl)
 		}),
 		signalr.Logger(kitlog.NewLogfmtLogger(os.Stdout), false))
 	if nil != err {
