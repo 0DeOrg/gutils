@@ -10,9 +10,9 @@ package logutils
 import (
 	"fmt"
 	"github.com/lestrrat-go/file-rotatelogs"
+	"gitlab.qihangxingchen.com/qt/gutils/fileutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gutils/fileutils"
 	"os"
 	"path"
 	"time"
