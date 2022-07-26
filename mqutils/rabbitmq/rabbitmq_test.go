@@ -13,12 +13,12 @@ import (
 
 func Test_Publish(t *testing.T) {
 	cfg := &RabbitMQConfig{
-		User:     "admin",
-		Password: "QGgRlqdMXdGu",
-		Address:  "192.168.10.45:5672",
-		VHost:    "/",
+		User:      "admin",
+		Password:  "QGgRlqdMXdGu",
+		Addresses: []string{"192.168.10.45:5672"},
+		VHost:     "/",
 	}
-	mq, err := NewRabbitMq(cfg)
+	mq, err := NewRabbitMq(cfg, false)
 	if nil != err {
 		log.Fatal(err.Error())
 	}

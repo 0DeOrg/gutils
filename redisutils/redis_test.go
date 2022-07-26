@@ -1,17 +1,16 @@
 package redisutils
 
-import (
-	"go.uber.org/zap"
-	"gutils/logutils"
-	"testing"
-)
-
 /**
  * @Author: lee
  * @Description:
  * @File: redis_test
  * @Date: 2022-07-14 5:59 下午
  */
+import (
+	"gitlab.qihangxingchen.com/qt/gutils/logutils"
+	"go.uber.org/zap"
+	"testing"
+)
 
 func Test_Cluster(t *testing.T) {
 	cfg := ClusterCfg{
