@@ -12,18 +12,16 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
+	"gitlab.qihangxingchen.com/qt/gutils/dumputils"
+	"gitlab.qihangxingchen.com/qt/gutils/fileutils"
+	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
-	"gutils/dumputils"
-	"gutils/fileutils"
-	"gutils/logutils"
 	"net"
 	"os"
 	"path/filepath"
 	"sync/atomic"
 	"time"
 )
-
-var tag_leader int32
 
 type RaftNode struct {
 	raft           *raft.Raft
@@ -33,6 +31,7 @@ type RaftNode struct {
 	bootstrap      bool
 	LocalID        raft.ServerID
 	LocalAddress   raft.ServerAddress
+	tagLeader      int32
 }
 
 func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
@@ -42,6 +41,7 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 	defaultCfg.Logger = hclog.Default()
 	notifyCh := make(chan bool, 1)
 	defaultCfg.NotifyCh = notifyCh
+	defaultCfg.SnapshotInterval = options.snapInterval
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", options.bindTCPAddress)
 	if nil != err {
@@ -59,7 +59,7 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 	}
 
 	//快照存储，用来存储节点的快照信息
-	snapshotStore, err := raft.NewFileSnapshotStoreWithLogger(options.storeDir, 100, logger)
+	snapshotStore, err := raft.NewFileSnapshotStoreWithLogger(options.storeDir, options.snapRetain, logger)
 	if nil != err {
 		return nil, fmt.Errorf("NewRaftNode, snapshot store err: %s", err.Error())
 	}
@@ -112,10 +112,10 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 			select {
 			case isLeader := <-notifyCh:
 				if isLeader {
-					atomic.StoreInt32(&tag_leader, 1)
+					atomic.StoreInt32(&ret.tagLeader, 1)
 					logutils.Warn("node is leader", zap.String("address", string(ret.LocalAddress)))
 				} else {
-					atomic.StoreInt32(&tag_leader, 0)
+					atomic.StoreInt32(&ret.tagLeader, 0)
 					logutils.Warn("node has lose leader", zap.String("address", string(ret.LocalAddress)))
 				}
 			}
@@ -146,8 +146,11 @@ func (r *RaftNode) JoinCluster(serverId string, address string) (string, error) 
 /* @Description: 判断当前节点是否leader节点
  * @return bool
  */
-func IsLeader() bool {
-	return 1 == atomic.LoadInt32(&tag_leader)
+func (r *RaftNode) IsLeader() bool {
+	if nil == r {
+		return false
+	}
+	return 1 == atomic.LoadInt32(&r.tagLeader)
 }
 
 func (r *RaftNode) LeaderWithId() (string, string) {

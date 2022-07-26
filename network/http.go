@@ -27,6 +27,31 @@ type HttpHost struct {
 	CAPath  string
 }
 
+func (h *HttpHost) GetURL() (*url.URL, error) {
+	hostUrl := ""
+	trimHost := strings.TrimLeft(h.Host, " ")
+
+	if !strings.HasPrefix(trimHost, "http") {
+		if h.IsHttps {
+			hostUrl += "https://" + trimHost
+		} else {
+			hostUrl += "http://" + trimHost
+		}
+	} else {
+		hostUrl = trimHost
+	}
+
+	if 0 != h.Port {
+		hostUrl += ":" + strconv.FormatUint((uint64)(h.Port), 10)
+	}
+	ret, err := url.Parse(hostUrl)
+	if nil != err {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
 type HttpAgent struct {
 	NetAgentBase
 	Client *http.Client
@@ -213,6 +238,12 @@ func (h *HttpAgent) Post(path string, reqBody string, params map[string]string, 
 	}
 
 	return string(resBody), nil
+}
+
+func (h *HttpAgent) SimpleForward(w http.ResponseWriter, req *http.Request) {
+	proxy := httputil.NewSingleHostReverseProxy(h.URL)
+	proxy.Transport = http.DefaultTransport
+	proxy.ServeHTTP(w, req)
 }
 
 type transport struct {

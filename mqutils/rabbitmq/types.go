@@ -42,10 +42,10 @@ const (
 )
 
 type RabbitMQConfig struct {
-	User        string `json:"user"     yaml:"user"   mapstructure:"user"`
-	Password    string `json:"password"     yaml:"password"   mapstructure:"password"`
-	AddressList string `json:"address-list"     yaml:"address-list"   mapstructure:"address-list"`
-	VHost       string `json:"vhost"     yaml:"vhost"   mapstructure:"vhost"`
+	User      string   `json:"user"     yaml:"user"   mapstructure:"user"`
+	Password  string   `json:"password"     yaml:"password"   mapstructure:"password"`
+	Addresses []string `json:"address"     yaml:"address"   mapstructure:"address"`
+	VHost     string   `json:"vhost"     yaml:"vhost"   mapstructure:"vhost"`
 }
 
 type PublishContent struct {
@@ -139,6 +139,10 @@ func (p *connectionProxy) connect() error {
 		}
 	}
 
+	if len(p.urlCache) == 0 {
+		return fmt.Errorf("connectionProxy|connect url is empty")
+	}
+
 	url := p.chooseUrl()
 	conn, err := amqp.Dial(url)
 	if err != nil {
@@ -173,6 +177,7 @@ func (p *connectionProxy) handleReconnect() {
 			case <-p.done:
 				break
 			case <-time.After(reconnectDelay):
+				logutils.Warn("connectionProxy|handleReconnect retry", zap.Error(err))
 				continue
 			}
 		}
@@ -300,7 +305,7 @@ func (p *channelProxy) ExchangeDeclare(name string, kind ExchangeKind, durable b
 	if nil == p.ch {
 		return fmt.Errorf("channelProxy|ExchangeDeclare channel is nil")
 	}
-	if p.running {
+	if !p.running {
 		return fmt.Errorf("channelProxy|ExchangeDeclare channel is not running")
 	}
 
@@ -315,7 +320,7 @@ func (p *channelProxy) QueueDeclare(name string) error {
 	if nil == p.ch {
 		return fmt.Errorf("channelProxy|QueueDeclare channel is nil")
 	}
-	if p.running {
+	if !p.running {
 		return fmt.Errorf("channelProxy|QueueDeclare channel is not running")
 	}
 
@@ -331,7 +336,7 @@ func (p *channelProxy) QueueBind(name, exchange, routingKey string) error {
 	if nil == p.ch {
 		return fmt.Errorf("channelProxy|QueueBind channel is nil")
 	}
-	if p.running {
+	if !p.running {
 		return fmt.Errorf("channelProxy|QueueBind channel is not running")
 	}
 
@@ -346,7 +351,7 @@ func (p *channelProxy) Consume(name string) (<-chan amqp.Delivery, error) {
 	if nil == p.ch {
 		return nil, fmt.Errorf("channelProxy|Consume channel is nil")
 	}
-	if p.running {
+	if !p.running {
 		return nil, fmt.Errorf("channelProxy|Consume channel is not running")
 	}
 

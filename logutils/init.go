@@ -26,6 +26,7 @@ type ILogger interface {
 	Debug(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
 	DPanic(msg string, fields ...zap.Field)
+	Panic(msg string, fields ...zap.Field)
 }
 
 func InitLogger(config interface{}) {
@@ -84,4 +85,11 @@ func DPanic(msg string, fields ...zap.Field) {
 		panic(errorNotInit)
 	}
 	loggerModule.DPanic(msg, fields...)
+}
+
+func Panic(msg string, fields ...zap.Field) {
+	if !logInit {
+		panic(errorNotInit)
+	}
+	loggerModule.Panic(msg, fields...)
 }

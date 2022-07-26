@@ -29,8 +29,8 @@ type RabbitMq struct {
 }
 
 func NewRabbitMq(cfg *RabbitMQConfig, reliable bool) (*RabbitMq, error) {
-	urls := make([]string, 0, len(cfg.AddressList))
-	for _, addr := range cfg.AddressList {
+	urls := make([]string, 0, len(cfg.Addresses))
+	for _, addr := range cfg.Addresses {
 		url := fmt.Sprintf("amqp://%s:%s@%s/%s", cfg.User, cfg.Password, addr, cfg.VHost)
 		urls = append(urls, url)
 	}

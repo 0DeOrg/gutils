@@ -90,6 +90,10 @@ func (m *ZapLogModule) DPanic(msg string, fields ...zap.Field) {
 	m.logger.DPanic(msg, fields...)
 }
 
+func (m *ZapLogModule) Panic(msg string, fields ...zap.Field) {
+	m.logger.Panic(msg, fields...)
+}
+
 var zapConfig ZapConfig
 var level zapcore.Level
 

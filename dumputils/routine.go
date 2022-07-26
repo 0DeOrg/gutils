@@ -3,6 +3,7 @@ package dumputils
 import (
 	"bytes"
 	"errors"
+	"gitlab.qihangxingchen.com/qt/gutils"
 	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
 	"runtime"
@@ -15,11 +16,15 @@ import (
  * @Date: 2021/10/14 2:53 下午
  */
 
-func HandlePanic(v ...interface{}) {
+// HandlePanic
+/* @Description: 第一个参数是函数，后面是参数
+ * @param params ...interface{}
+ */
+func HandlePanic(params ...interface{}) {
 	var err error
-	var stack string
+	//var stack string
 	if r := recover(); nil != r {
-		stack = string(PanicTrace(4))
+		//stack = string(PanicTrace(4))
 		switch r.(type) {
 		case error:
 			err = r.(error)
@@ -31,19 +36,20 @@ func HandlePanic(v ...interface{}) {
 			err = errors.New("Unknown panic")
 		}
 
-		pc := make([]uintptr, 1)
-		numFrames := runtime.Callers(4, pc)
-		if numFrames < 1 {
-			return
-		}
+		//pc := make([]uintptr, 1)
+		//numFrames := runtime.Callers(4, pc)
+		//if numFrames < 1 {
+		//	return
+		//}
 
-		frame, _ := runtime.CallersFrames(pc).Next()
+		//frame, _ := runtime.CallersFrames(pc).Next()
 		//log.Println("rame function, file, line", frame.Function, frame.File, frame.Line)
 
 		//log.Println("panic stack:\n "+stack+"\n", err.Error())
+		gutils.Invoke0(params)
 
-		logutils.Error("frame function, file, line", zap.String("func", frame.Function), zap.String("file", frame.File), zap.Int("line", frame.Line))
-		logutils.Fatal("panic stack:\n "+stack+"\n", zap.Error(err))
+		//logutils.Error("frame function, file, line", zap.String("func", frame.Function), zap.String("file", frame.File), zap.Int("line", frame.Line))
+		logutils.Panic("panic stack:", zap.Error(err))
 
 	}
 }
