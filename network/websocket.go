@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -37,12 +38,17 @@ type WebsocketAgent struct {
 }
 
 func NewWebsocketAgent(host string, port uint, path string, isSecure bool, elapse int) *WebsocketAgent {
-
 	hostUrl := ""
-	if isSecure {
-		hostUrl = "wss://" + host
+	trimHost := strings.TrimLeft(host, " ")
+
+	if !strings.HasPrefix(trimHost, "ws") {
+		if isSecure {
+			hostUrl += "wss://" + trimHost
+		} else {
+			hostUrl += "ws://" + trimHost
+		}
 	} else {
-		hostUrl = "ws://" + host
+		hostUrl = trimHost
 	}
 
 	if 0 != port {
