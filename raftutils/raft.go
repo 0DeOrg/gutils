@@ -24,14 +24,15 @@ import (
 )
 
 type RaftNode struct {
-	Raft           *raft.Raft
-	fsm            raft.FSM
-	leaderNotifyCh chan bool
-	logger         hclog.Logger
-	bootstrap      bool
-	LocalID        raft.ServerID
-	LocalAddress   raft.ServerAddress
-	tagLeader      int32
+	Raft             *raft.Raft
+	fsm              raft.FSM
+	leaderNotifyCh   chan bool
+	logger           hclog.Logger
+	bootstrap        bool
+	LocalID          raft.ServerID
+	LocalAddress     raft.ServerAddress
+	tagLeader        int32
+	HasExistingState bool
 }
 
 func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
@@ -81,17 +82,23 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 		return nil, fmt.Errorf("NewRaftNode, create raft err: %s", err.Error())
 	}
 
+	hasState, err := raft.HasExistingState(logStore, stableStore, snapshotStore)
+	if nil != err {
+		return nil, fmt.Errorf("NewRaftNode|HasExistingState err: %s", err.Error())
+	}
+
 	ret := &RaftNode{
-		raft:           localRaft,
-		fsm:            fsm,
-		leaderNotifyCh: notifyCh,
-		logger:         logger,
-		LocalID:        defaultCfg.LocalID,
-		LocalAddress:   transport.LocalAddr(),
+		Raft:             localRaft,
+		fsm:              fsm,
+		leaderNotifyCh:   notifyCh,
+		logger:           logger,
+		LocalID:          defaultCfg.LocalID,
+		LocalAddress:     transport.LocalAddr(),
+		HasExistingState: hasState,
 	}
 
 	//是否引导启动，只有一个是作为引导启动的
-	if options.bootstrap {
+	if options.bootstrap && !hasState {
 		configuration := raft.Configuration{
 			Servers: []raft.Server{
 				{
