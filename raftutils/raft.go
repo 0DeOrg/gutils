@@ -24,7 +24,7 @@ import (
 )
 
 type RaftNode struct {
-	raft           *raft.Raft
+	Raft           *raft.Raft
 	fsm            raft.FSM
 	leaderNotifyCh chan bool
 	logger         hclog.Logger
@@ -134,9 +134,9 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
  * @return error
  */
 func (r *RaftNode) JoinCluster(serverId string, address string) (string, error) {
-	future := r.raft.AddVoter(raft.ServerID(serverId), raft.ServerAddress(address), 0, 10*time.Second)
+	future := r.Raft.AddVoter(raft.ServerID(serverId), raft.ServerAddress(address), 0, 10*time.Second)
 	if err := future.Error(); nil != err {
-		_, leadId := r.raft.LeaderWithID()
+		_, leadId := r.Raft.LeaderWithID()
 		return string(leadId), fmt.Errorf("JoinCluster err: %s", err.Error())
 	}
 	return string(r.LocalID), nil
@@ -154,12 +154,12 @@ func (r *RaftNode) IsLeader() bool {
 }
 
 func (r *RaftNode) LeaderWithId() (string, string) {
-	addr, id := r.raft.LeaderWithID()
+	addr, id := r.Raft.LeaderWithID()
 	return string(addr), string(id)
 }
 
 func (r *RaftNode) ServerList() []raft.Server {
-	future := r.raft.GetConfiguration()
+	future := r.Raft.GetConfiguration()
 	if nil != future.Error() {
 		return nil
 	}
@@ -168,9 +168,9 @@ func (r *RaftNode) ServerList() []raft.Server {
 }
 
 func (r *RaftNode) Apply(data []byte, timeout time.Duration) raft.ApplyFuture {
-	return r.raft.Apply(data, timeout)
+	return r.Raft.Apply(data, timeout)
 }
 
 //func (r *RaftNode) FSMApply(data []byte) interface{} {
-//	return r.fsm.Apply(&raft.Log{Data: data})
+//	return r.fsm.Apply(&Raft.Log{Data: data})
 //}
