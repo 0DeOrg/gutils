@@ -41,14 +41,14 @@ func NewWebsocketAgent(host string, port uint, path string, isSecure bool, elaps
 	hostUrl := ""
 	trimHost := strings.TrimLeft(host, " ")
 
-	if !strings.HasPrefix(trimHost, "ws") {
+	if !strings.HasPrefix(trimHost, "ws") && strings.Contains(trimHost, "://") {
+		hostUrl = trimHost
+	} else {
 		if isSecure {
 			hostUrl += "wss://" + trimHost
 		} else {
 			hostUrl += "ws://" + trimHost
 		}
-	} else {
-		hostUrl = trimHost
 	}
 
 	if 0 != port {

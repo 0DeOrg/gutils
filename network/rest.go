@@ -31,14 +31,14 @@ func NewRestClient(host string, port uint, isHttps bool) (*RestAgent, error) {
 
 	trimHost := strings.TrimLeft(host, " ")
 
-	if !strings.HasPrefix(trimHost, "http") {
+	if strings.HasPrefix(trimHost, "http") && strings.Contains(trimHost, "://") {
+		hostUrl = trimHost
+	} else {
 		if isHttps {
 			hostUrl += "https://" + trimHost
 		} else {
 			hostUrl += "http://" + trimHost
 		}
-	} else {
-		hostUrl = trimHost
 	}
 
 	if 0 != port {

@@ -32,7 +32,8 @@ type RaftNode struct {
 	LocalID          raft.ServerID
 	LocalAddress     raft.ServerAddress
 	tagLeader        int32
-	HasExistingState bool
+	BootLastIndex    uint64
+	HasExistingState bool //是否已经加入过集群
 }
 
 func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
@@ -40,7 +41,7 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 	defaultCfg := raft.DefaultConfig()
 	defaultCfg.LocalID = options.serverID
 	defaultCfg.Logger = hclog.Default()
-	notifyCh := make(chan bool, 1)
+	notifyCh := make(chan bool, 10)
 	defaultCfg.NotifyCh = notifyCh
 	defaultCfg.SnapshotInterval = options.snapInterval
 
@@ -94,6 +95,7 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 		logger:           logger,
 		LocalID:          defaultCfg.LocalID,
 		LocalAddress:     transport.LocalAddr(),
+		BootLastIndex:    localRaft.LastIndex(),
 		HasExistingState: hasState,
 	}
 
@@ -119,6 +121,11 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 			select {
 			case isLeader := <-notifyCh:
 				if isLeader {
+					//集群启动的第一个leader，因为没有选出leader 就不会同步日志
+					if nil != options.LeaderNotifyCallback {
+						options.LeaderNotifyCallback()
+					}
+
 					atomic.StoreInt32(&ret.tagLeader, 1)
 					logutils.Warn("node is leader", zap.String("address", string(ret.LocalAddress)))
 				} else {

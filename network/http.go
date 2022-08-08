@@ -31,14 +31,14 @@ func (h *HttpHost) GetURL() (*url.URL, error) {
 	hostUrl := ""
 	trimHost := strings.TrimLeft(h.Host, " ")
 
-	if !strings.HasPrefix(trimHost, "http") {
+	if strings.HasPrefix(trimHost, "http") && strings.Contains(trimHost, "://") {
+		hostUrl = trimHost
+	} else {
 		if h.IsHttps {
 			hostUrl += "https://" + trimHost
 		} else {
 			hostUrl += "http://" + trimHost
 		}
-	} else {
-		hostUrl = trimHost
 	}
 
 	if 0 != h.Port {

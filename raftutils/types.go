@@ -39,12 +39,13 @@ type snapshotCfg struct {
 }
 
 type options struct {
-	storeDir       string        // store directory
-	bindTCPAddress string        // raft transport address
-	serverID       raft.ServerID // serverID 直接用监听加入集群地址作为id，方便leader轮换后找到新的leader监听地址
-	bootstrap      bool          // start as master or not
-	snapRetain     int
-	snapInterval   time.Duration
+	storeDir             string        // store directory
+	bindTCPAddress       string        // raft transport address
+	serverID             raft.ServerID // serverID 直接用监听加入集群地址作为id，方便leader轮换后找到新的leader监听地址
+	bootstrap            bool          // start as master or not
+	snapRetain           int
+	snapInterval         time.Duration
+	LeaderNotifyCallback func()
 }
 
 func (o *options) ServerID() raft.ServerID {
