@@ -95,7 +95,6 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 		logger:           logger,
 		LocalID:          defaultCfg.LocalID,
 		LocalAddress:     transport.LocalAddr(),
-		BootLastIndex:    localRaft.LastIndex(),
 		HasExistingState: hasState,
 	}
 
@@ -110,9 +109,14 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 			},
 		}
 
-		localRaft.BootstrapCluster(configuration)
+		bootFuture := localRaft.BootstrapCluster(configuration)
+		if nil != bootFuture.Error() {
+			return nil, fmt.Errorf("NewRaftNode|BootstrapCluster err: %s", bootFuture.Error())
+		}
 		ret.bootstrap = true
 	}
+
+	ret.BootLastIndex = localRaft.LastIndex()
 
 	//aggressive consume notifyCh, 为避免raft堵塞需要一直消费
 	go func() {
@@ -127,10 +131,10 @@ func NewRaftNode(options *options, fsm raft.FSM) (*RaftNode, error) {
 					}
 
 					atomic.StoreInt32(&ret.tagLeader, 1)
-					logutils.Warn("node is leader", zap.String("address", string(ret.LocalAddress)))
+					logutils.Warn("leader changed is leader", zap.String("address", string(ret.LocalAddress)))
 				} else {
 					atomic.StoreInt32(&ret.tagLeader, 0)
-					logutils.Warn("node has lose leader", zap.String("address", string(ret.LocalAddress)))
+					logutils.Warn("leader changed not leader", zap.String("address", string(ret.LocalAddress)))
 				}
 			}
 		}
