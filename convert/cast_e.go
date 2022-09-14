@@ -14,7 +14,6 @@ import (
  * @Date: 2021/9/2 6:11 下午
  */
 
-
 func ToStringE(i interface{}) (string, error) {
 	return cast.ToStringE(i)
 }
@@ -73,7 +72,6 @@ func SliceToStruct(list []interface{}, obj interface{}) error {
 			return fmt.Errorf("can't parse '%s' to '%s' for param '%s'", reflect.TypeOf(src).Kind(), dst.Kind(), dstType.Name)
 		}
 
-
 		if dst.IsValid() && dst.CanSet() {
 			dst.Set(reflect.ValueOf(src))
 		} else {
@@ -95,12 +93,13 @@ func MustBeStructPtr(i interface{}) error {
 
 func MustBeStruct(i interface{}) error {
 	dstType := reflect.TypeOf(i)
-	if reflect.Ptr == dstType.Kind() && reflect.Struct != dstType.Elem().Kind() {
-		return fmt.Errorf("'%s' ptr must be a struct", dstType.Name())
+	if reflect.Ptr == dstType.Kind() {
+		if reflect.Struct != dstType.Elem().Kind() {
+			return fmt.Errorf("'%s' ptr must be a struct", dstType.Name())
+		}
 	} else if reflect.Struct != dstType.Kind() {
 		return fmt.Errorf("'%s' must be a struct", dstType.Name())
 	}
 
 	return nil
 }
-

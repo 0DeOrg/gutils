@@ -9,6 +9,7 @@ package mathutils
 import (
 	"github.com/shopspring/decimal"
 	"math"
+	"math/big"
 )
 
 // KeepSignificantDigits
@@ -32,4 +33,31 @@ func KeepSignificantDigits(d decimal.Decimal, digit int) decimal.Decimal {
 	ret := decimal.NewFromBigInt(coe, d.Exponent())
 
 	return ret
+}
+
+// GetMaxDecimalValue
+/* @Description: 获取最高位10进制数并返回位数
+ * @param value *big.Int
+ * @return *big.Int
+ * @return int32
+ */
+func GetMaxDecimalValue(value *big.Int) (*big.Int, int32) {
+	if value.Cmp(big.NewInt(0)) == 0 {
+		return big.NewInt(0), 0
+	}
+	neg := false
+	if value.Cmp(big.NewInt(0)) < 0 {
+		value = value.Mul(value, big.NewInt(-1))
+		neg = true
+	}
+
+	str := value.String()
+
+	var digit = int32(len(str) - 1)
+
+	if neg {
+		return decimal.NewFromInt32(10).Pow(decimal.NewFromInt32(digit)).Mul(decimal.NewFromInt32(-1)).BigInt(), digit
+	}
+
+	return decimal.NewFromInt32(10).Pow(decimal.NewFromInt32(digit)).BigInt(), digit
 }
