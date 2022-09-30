@@ -21,6 +21,7 @@ var dingBot *DingTalk
 type DingTalk struct {
 	Url    string
 	client *network.RestAgent
+	mapMsg map[int64]string
 }
 
 // 初始化告警结构
@@ -39,6 +40,12 @@ func InitDingBot(url string) error {
 		client: client,
 	}
 	return nil
+}
+
+func AssignMsgMap(mapMsg map[int64]string) {
+	if nil != dingBot {
+		dingBot.mapMsg = mapMsg
+	}
 }
 
 func PostDingInfo(code int64, funcName string, params map[string]interface{}) error {
@@ -84,9 +91,19 @@ func PostDingError(code int64, funcName string, params map[string]interface{}) e
 }
 
 func doPostDingMsg(kind string, code int64, params map[string]interface{}) error {
-	title, ok := DING_WARNING_MSG[code]
-	if !ok {
-		title = "未定义告警"
+	var title = "未定义告警"
+	var ok bool
+
+	str, ok := DING_WARNING_MSG[code]
+	if ok {
+		title = str
+	}
+
+	if nil != dingBot.mapMsg {
+		str, ok = dingBot.mapMsg[code]
+		if ok {
+			title = str
+		}
 	}
 
 	msg, err := json.Marshal(params)
