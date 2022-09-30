@@ -77,10 +77,10 @@ func (h *RestAgent) SimpleGet(path string, params map[string]string) (string, er
 	}
 
 	if res.StatusCode() != 200 {
-		return string(res.Body()), fmt.Errorf("%s", string(res.Body()))
+		return string(res.Body()), fmt.Errorf("response err: %s", res.String())
 	}
 
-	return string(res.Body()), nil
+	return res.String(), nil
 }
 
 func (h *RestAgent) SimplePost(path string, reqBody string, params map[string]string) (string, error) {
@@ -92,17 +92,26 @@ func (h *RestAgent) SimplePost(path string, reqBody string, params map[string]st
 		return "", err
 	}
 
-	return string(res.Body()), nil
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("response err: %s", res.String())
+	}
+
+	return res.String(), nil
 }
 
 func (h *RestAgent) Get(path string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	url := h.URL.String() + path
-	res, err := h.Client.R().SetQueryParams(params).SetHeaders(headers).SetCookies(cookies).Get(url)
+	r := h.Client.R()
+	res, err := r.SetQueryParams(params).SetHeaders(headers).SetCookies(cookies).Get(url)
 	if nil != err {
 		return "", err
 	}
 
-	return string(res.Body()), nil
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("response err: %s", res.String())
+	}
+
+	return res.String(), nil
 }
 
 func (h *RestAgent) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
@@ -112,6 +121,37 @@ func (h *RestAgent) Post(path string, reqBody string, params map[string]string, 
 		return "", err
 	}
 
-	return string(res.Body()), nil
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("response err: %s", res.String())
+	}
+	return res.String(), nil
+
+}
+
+func (h *RestAgent) Put(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+	url := h.URL.String() + path
+	res, err := h.Client.R().SetQueryParams(params).SetBody(reqBody).SetHeaders(headers).SetCookies(cookies).Put(url)
+	if nil != err {
+		return "", err
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("response err: %s", res.String())
+	}
+	return res.String(), nil
+
+}
+
+func (h *RestAgent) Delete(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+	url := h.URL.String() + path
+	res, err := h.Client.R().SetQueryParams(params).SetBody(reqBody).SetHeaders(headers).SetCookies(cookies).Delete(url)
+	if nil != err {
+		return "", err
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("response err: %s", res.String())
+	}
+	return res.String(), nil
 
 }

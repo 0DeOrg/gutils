@@ -84,6 +84,14 @@ func (q *QueueFIFO) ReverseRange(fn func(int, interface{}) bool) {
 	}
 }
 
+func (q *QueueFIFO) Clear() {
+	q.mtx.Lock()
+	defer q.mtx.Unlock()
+	q.len = 0
+	q.head = 0
+	q.tail = 0
+}
+
 func (q *QueueFIFO) IsFull() bool {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
