@@ -148,24 +148,30 @@ func (ws *WebsocketAgent) SendPingMsg(data []byte) {
 	ws.reqChan <- MessagePrefix + messageType + string(data)
 }
 
-func (ws *WebsocketAgent) WaitForConnected() error {
-	var ret error
+func (ws *WebsocketAgent) WaitForConnected() <-chan error {
+	ret := make(chan error, 1)
 	tick := time.Tick(100 * time.Millisecond)
-	for {
-		select {
-		case <-tick:
-			{
-				if ws.isAlive {
-					return nil
+	go func() {
+
+		for {
+			select {
+			case <-tick:
+				{
+					if ws.isAlive {
+						ret <- nil
+						return
+					}
+				}
+			case <-time.After(30 * time.Second):
+				{
+					err := fmt.Errorf("wait for websocket connect time out 30s, url: %s, err: %s ", ws.URL.String(), ws.errConn.Error())
+					ret <- err
 				}
 			}
-		case <-time.After(30 * time.Second):
-			{
-				ret = fmt.Errorf("wait for websocket connect time out 30s, url: %s, err: %s ", ws.URL.String(), ws.errConn.Error())
-				return ret
-			}
 		}
-	}
+	}()
+
+	return ret
 }
 
 func (ws *WebsocketAgent) dial() error {
