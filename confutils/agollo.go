@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"gitlab.qihangxingchen.com/qt/gutils/convert"
+	"gitlab.qihangxingchen.com/qt/gutils/eventListener"
 	"log"
 )
 
@@ -80,6 +81,8 @@ func (l *changeListener) OnChange(event *storage.ChangeEvent) {
 	if nil != err {
 		log.Print("changeListener OnChange err", err.Error())
 	}
+
+	eventListener.TriggerEvent(EventApolloChange)
 }
 
 //OnNewestChange 监控最新变更
