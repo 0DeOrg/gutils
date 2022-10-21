@@ -55,6 +55,39 @@ func HandlePanic(params ...interface{}) {
 	}
 }
 
+func SkipPanic(params ...interface{}) {
+	var err error
+	var stack string
+	if r := recover(); nil != r {
+		stack = string(PanicTrace(4))
+		switch r.(type) {
+		case error:
+			err = r.(error)
+			break
+		case string:
+			err = errors.New(r.(string))
+			break
+		default:
+			err = errors.New("Unknown panic")
+		}
+
+		pc := make([]uintptr, 1)
+		numFrames := runtime.Callers(4, pc)
+		if numFrames < 1 {
+			return
+		}
+
+		frame, _ := runtime.CallersFrames(pc).Next()
+		//log.Println("rame function, file, line", frame.Function, frame.File, frame.Line)
+
+		//log.Println("panic stack:\n "+stack+"\n", err.Error())
+		gutils.Invoke0(params)
+
+		logutils.Error("frame function, file, line", zap.String("func", frame.Function), zap.String("file", frame.File),
+			zap.Int("line", frame.Line), zap.Error(err), zap.String("stack", stack))
+	}
+}
+
 func PanicTrace(kb int) []byte {
 	s := []byte("/src/runtime/panic.go")
 	e := []byte("\ngoroutine ")

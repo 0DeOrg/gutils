@@ -9,6 +9,8 @@ package confutils
 
 const APOLLO_PATH = "apollo.yaml"
 
+const EventApolloChange = "apollo_change"
+
 // Apollo 配置文件
 type Apollo struct {
 	Apollo ApolloConfig `mapstructure:"apollo"          json:"apollo"          yaml:"apollo"`
