@@ -160,6 +160,7 @@ func (p *connectionProxy) handleReconnect() {
 			case <-p.done:
 				break
 			case <-time.After(reconnectDelay):
+				logutils.Error("connectionProxy|handleReconnect connect failed", zap.Error(err))
 				continue
 			}
 		}
@@ -202,6 +203,7 @@ func NewChannelProxy(ctx context.Context, connProxy *connectionProxy, flagCh cha
 }
 
 func (p *channelProxy) handleReconnect() {
+	time.Sleep(reInitDelay)
 	for {
 		_, err := p.init()
 		if nil != err {
@@ -209,6 +211,7 @@ func (p *channelProxy) handleReconnect() {
 			case <-p.ctx.Done():
 				break
 			case <-time.After(reInitDelay):
+				logutils.Error("channelProxy|handleReconnect connect failed", zap.Error(err))
 				continue
 			}
 		}
