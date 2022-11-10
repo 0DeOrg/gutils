@@ -9,6 +9,7 @@ package dingutils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cast"
 	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"gitlab.qihangxingchen.com/qt/gutils/network"
 	"go.uber.org/zap"
@@ -56,7 +57,7 @@ func PostDingInfo(code int64, funcName string, params map[string]interface{}) er
 	if nil == mapParam {
 		mapParam = make(map[string]interface{})
 	}
-	mapParam["code"] = code
+
 	mapParam["func"] = funcName
 
 	return doPostDingMsg(KindInfo, code, mapParam)
@@ -70,7 +71,7 @@ func PostDingWarn(code int64, funcName string, params map[string]interface{}) er
 	if nil == mapParam {
 		mapParam = make(map[string]interface{})
 	}
-	mapParam["code"] = code
+
 	mapParam["func"] = funcName
 
 	return doPostDingMsg(KindWarn, code, mapParam)
@@ -84,7 +85,7 @@ func PostDingError(code int64, funcName string, params map[string]interface{}) e
 	if nil == mapParam {
 		mapParam = make(map[string]interface{})
 	}
-	mapParam["code"] = code
+
 	mapParam["func"] = funcName
 
 	return doPostDingMsg(KindError, code, mapParam)
@@ -106,25 +107,19 @@ func doPostDingMsg(kind string, code int64, params map[string]interface{}) error
 		}
 	}
 
-	msg, err := json.Marshal(params)
-	if nil != err {
-		return err
-	}
-
-	sections := strings.Split(string(msg), ",")
-
 	var content strings.Builder
 	titleStr := fmt.Sprintf("#### 【%s】", kind)
 	content.WriteString(titleStr + title + "\n")
-
-	for _, value := range sections {
-		content.WriteString("> " + value + "\n")
+	content.WriteString("code: " + cast.ToString(code) + "\r\r\n")
+	for key, value := range params {
+		msg, _ := json.Marshal(value)
+		content.WriteString(key + ": " + string(msg) + "\r\r\n")
 	}
 
 	content.WriteString("\n\n ###### ")
 	content.WriteString(time.Now().Format("2006-01-02 15:04:05") + "（UTC+8）")
 
-	_, err = postDing(content.String())
+	_, err := postDing(content.String())
 	if err != nil {
 		return fmt.Errorf("doPostDingMsg|Ding err %s", err.Error())
 	}

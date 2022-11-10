@@ -20,7 +20,7 @@ const CONFIG_PATH = "config.yaml"
 //外部命令行解析的时候赋值
 var CfgPathFlag = ""
 
-func NewViper(path string, pObj interface{}) *viper.Viper {
+func NewViper(path string, pObj interface{}, callback ...func()) *viper.Viper {
 	var config string
 	if len(path) == 0 {
 		//flag.StringVar(&config, "c", "", "choose config file.")
@@ -51,6 +51,11 @@ func NewViper(path string, pObj interface{}) *viper.Viper {
 		if err := v.Unmarshal(pObj); err != nil {
 			log.Println(err.Error())
 		}
+
+		for _, callFunc := range callback {
+			go callFunc()
+		}
+
 	})
 
 	if err := v.Unmarshal(pObj); err != nil {

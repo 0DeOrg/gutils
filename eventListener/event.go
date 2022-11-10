@@ -16,7 +16,7 @@ import (
 
 var (
 	seqMax      uint32 = 1
-	listenerMap map[string][]*listener
+	listenerMap        = map[string][]*listener{}
 	mtx         sync.RWMutex
 )
 
