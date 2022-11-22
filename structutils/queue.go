@@ -42,11 +42,13 @@ func (q *QueueFIFO) Push(ele interface{}) {
 	q.mtx.Lock()
 	defer q.mtx.Unlock()
 
-	q.cache[q.tail] = ele
-	q.tail = (q.tail + 1) % q.capacity
-	if q.len == q.capacity {
-		q.head = (q.head + 1) % q.capacity
+	if q.len > 0 {
+		q.tail = (q.tail + 1) % q.capacity
+		if q.tail == q.head {
+			q.head = (q.head + 1) % q.capacity
+		}
 	}
+	q.cache[q.tail] = ele
 
 	q.len++
 	if q.len > q.capacity {
@@ -62,7 +64,7 @@ func (q *QueueFIFO) Range(fn func(int, interface{}) bool) {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
 	for i := 0; i < q.len; i++ {
-		idx := (q.tail - 1 - i + q.capacity) % q.capacity
+		idx := (q.tail - i + q.capacity) % q.capacity
 		if !fn(i, q.cache[idx]) {
 			break
 		}
@@ -125,7 +127,7 @@ func (q *QueueFIFO) Tail() (interface{}, error) {
 	if 0 == q.len {
 		return nil, errors.New("queue is empty")
 	}
-	return q.cache[(q.tail-1+q.capacity)%q.capacity], nil
+	return q.cache[q.tail], nil
 }
 
 func (q *QueueFIFO) Print() {
@@ -137,7 +139,7 @@ func (q *QueueFIFO) Print() {
 	fmt.Println()
 }
 func (q *QueueFIFO) PrintReverse() {
-	fmt.Print("reverse: ")
+	fmt.Print("reverse print: ")
 	q.ReverseRange(func(idx int, value interface{}) bool {
 		fmt.Print(value, ", ")
 		return true
