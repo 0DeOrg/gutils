@@ -70,13 +70,13 @@ func (rq *RabbitMq) ExchangeDeclare(name string, kind ExchangeKind, durable bool
 	return chProxy.ExchangeDeclare(name, kind, durable)
 }
 
-func (rq *RabbitMq) QueueDeclare(name string) error {
+func (rq *RabbitMq) QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool) error {
 	chProxy := rq.getChannelProxy()
 	if nil == chProxy {
 		return fmt.Errorf("RabbitMq|QueueDeclare chProxy is nil")
 	}
 
-	return chProxy.QueueDeclare(name)
+	return chProxy.QueueDeclare(name, durable, autoDelete, exclusive, noWait)
 }
 
 func (rq *RabbitMq) QueueBind(name, exchange, routingKey string) error {

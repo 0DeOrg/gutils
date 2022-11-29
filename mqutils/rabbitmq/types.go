@@ -316,7 +316,7 @@ func (p *channelProxy) ExchangeDeclare(name string, kind ExchangeKind, durable b
 	return nil
 }
 
-func (p *channelProxy) QueueDeclare(name string) error {
+func (p *channelProxy) QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool) error {
 	if nil == p.ch {
 		return fmt.Errorf("channelProxy|QueueDeclare channel is nil")
 	}
@@ -324,7 +324,7 @@ func (p *channelProxy) QueueDeclare(name string) error {
 		return fmt.Errorf("channelProxy|QueueDeclare channel is not running")
 	}
 
-	_, err := p.ch.QueueDeclare(name, false, false, false, false, nil)
+	_, err := p.ch.QueueDeclare(name, durable, autoDelete, exclusive, noWait, nil)
 	if nil != err {
 		return fmt.Errorf("channelProxy|QueueDeclare failed, err: %s", err.Error())
 	}
