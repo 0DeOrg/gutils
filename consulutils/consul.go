@@ -10,7 +10,7 @@ package consulutils
 import (
 	"fmt"
 	consulapi "github.com/hashicorp/consul/api"
-	"gitlab.qihangxingchen.com/qt/gutils/network"
+	"github.com/0DeOrg/gutils/network"
 	"strconv"
 	"strings"
 )

@@ -1,7 +1,7 @@
 package eventListener
 
 import (
-	"gitlab.qihangxingchen.com/qt/gutils"
+	"github.com/0DeOrg/gutils"
 	"reflect"
 	"sync"
 	"sync/atomic"

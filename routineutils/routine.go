@@ -1,7 +1,7 @@
 package routineutils
 
 import (
-	"gitlab.qihangxingchen.com/qt/gutils"
+	"github.com/0DeOrg/gutils"
 	"log"
 	"sync"
 )

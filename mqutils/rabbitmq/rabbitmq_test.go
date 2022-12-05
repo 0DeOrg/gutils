@@ -7,7 +7,7 @@ package rabbitmq
  * @Date: 2022/2/22 10:56 上午
  */
 import (
-	"gitlab.qihangxingchen.com/qt/gutils/logutils"
+	"github.com/0DeOrg/gutils/logutils"
 	"go.uber.org/zap"
 	"log"
 	"testing"

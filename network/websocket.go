@@ -10,7 +10,7 @@ package network
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"gitlab.qihangxingchen.com/qt/gutils/logutils"
+	"github.com/0DeOrg/gutils/logutils"
 	"go.uber.org/zap"
 	"net/url"
 	"strconv"

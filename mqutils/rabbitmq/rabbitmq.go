@@ -9,9 +9,9 @@ package rabbitmq
 
 import (
 	"fmt"
+	"github.com/0DeOrg/gutils/dumputils"
+	"github.com/0DeOrg/gutils/logutils"
 	"github.com/streadway/amqp"
-	"gitlab.qihangxingchen.com/qt/gutils/dumputils"
-	"gitlab.qihangxingchen.com/qt/gutils/logutils"
 	"go.uber.org/zap"
 	"time"
 )

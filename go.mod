@@ -1,4 +1,4 @@
-module gitlab.qihangxingchen.com/qt/gutils
+module github.com/0DeOrg/gutils
 
 go 1.17
 

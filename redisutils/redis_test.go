@@ -7,7 +7,7 @@ package redisutils
  * @Date: 2022-07-14 5:59 下午
  */
 import (
-	"gitlab.qihangxingchen.com/qt/gutils/logutils"
+	"github.com/0DeOrg/gutils/logutils"
 	"go.uber.org/zap"
 	"testing"
 )
