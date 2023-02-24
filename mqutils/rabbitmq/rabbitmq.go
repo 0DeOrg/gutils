@@ -99,14 +99,15 @@ func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
 
 func (rq *RabbitMq) Process() {
 	defer dumputils.HandlePanic()
-	idx := 0
+	ticker := time.NewTicker(60 * time.Second)
+	cnSuccess := 0
+	cnFailed := 0
 	go func() {
 		for {
 			select {
 			case content := <-rq.publishCh:
-				idx++
 				for {
-					confirmed, deliveryTag, err := rq.Publish(content)
+					_, _, err := rq.Publish(content)
 					if nil != err {
 						logutils.Error("RabbitMq|Process Publish fatal", zap.Any("content", content), zap.Error(err))
 						//当达到最大堵塞数量时，不堵塞了 防止影响正常流程，mq推送暂时就不保证了
@@ -115,18 +116,18 @@ func (rq *RabbitMq) Process() {
 							break
 						}
 						time.Sleep(time.Second)
+						cnFailed++
 						continue
 					}
 
-					//每100次打一次日志
-					if 100 == idx {
-						logutils.Info("RabbitMq|Process mq publish 100 times", zap.Int("traffic", len(rq.publishCh)),
-							zap.String("content", string(content.Content)), zap.Bool("confirmed", confirmed), zap.Uint64("deliveryTag", deliveryTag))
-						idx = 0
-					}
+					cnSuccess++
 					break
 				}
-
+			case <-ticker.C:
+				logutils.Info("RabbitMq|Process mq publish report", zap.Int("traffic", len(rq.publishCh)),
+					zap.Int("success", cnSuccess), zap.Int("failed", cnFailed))
+				cnSuccess = 0
+				cnFailed = 0
 			}
 		}
 	}()
