@@ -99,7 +99,8 @@ func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
 
 func (rq *RabbitMq) Process() {
 	defer dumputils.HandlePanic()
-	ticker := time.NewTicker(60 * time.Second)
+	duration := 10 * time.Second
+	ticker := time.NewTicker(duration)
 	cnSuccess := 0
 	cnFailed := 0
 	go func() {
@@ -125,7 +126,7 @@ func (rq *RabbitMq) Process() {
 				}
 			case <-ticker.C:
 				logutils.Info("RabbitMq|Process mq publish report", zap.Int("traffic", len(rq.publishCh)),
-					zap.Int("success", cnSuccess), zap.Int("failed", cnFailed))
+					zap.Int("success", cnSuccess), zap.Int("failed", cnFailed), zap.Duration("duration", duration))
 				cnSuccess = 0
 				cnFailed = 0
 			}
