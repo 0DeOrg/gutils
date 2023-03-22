@@ -1,34 +1,33 @@
 package structutils
 
+/**
+ * @Author: lee
+ * @Description: 固定长度的队列，如果队列满了则将头部的删除
+ * @File: queue
+ * @Date: 2022-08-11 10:49 上午
+ */
 import (
 	"errors"
 	"fmt"
 	"sync"
 )
 
-/**
- * @Author: lee
- * @Description:
- * @File: queue
- * @Date: 2022-08-11 10:49 上午
- */
-
 /* @Description: 固定长度的队列，如果队列满了则将z
  */
 
 type QueueFIFO struct {
-	capacity int
-	head     int
-	tail     int
-	len      int
-	cache    []interface{} //最好是相同类型的
+	Capacity int           `json:"c"`
+	H        int           `json:"h"`
+	T        int           `json:"t"`
+	Length   int           `json:"l"`
+	Cache    []interface{} `json:"C"` //最好是相同类型的
 	mtx      sync.RWMutex
 }
 
 func NewQueueFIFO(capacity int) *QueueFIFO {
 	ret := &QueueFIFO{
-		capacity: capacity,
-		cache:    make([]interface{}, capacity, capacity),
+		Capacity: capacity,
+		Cache:    make([]interface{}, capacity, capacity),
 	}
 
 	return ret
@@ -42,17 +41,17 @@ func (q *QueueFIFO) Push(ele interface{}) {
 	q.mtx.Lock()
 	defer q.mtx.Unlock()
 
-	if q.len > 0 {
-		q.tail = (q.tail + 1) % q.capacity
-		if q.tail == q.head {
-			q.head = (q.head + 1) % q.capacity
+	if q.Length > 0 {
+		q.T = (q.T + 1) % q.Capacity
+		if q.T == q.H {
+			q.H = (q.H + 1) % q.Capacity
 		}
 	}
-	q.cache[q.tail] = ele
+	q.Cache[q.T] = ele
 
-	q.len++
-	if q.len > q.capacity {
-		q.len = q.capacity
+	q.Length++
+	if q.Length > q.Capacity {
+		q.Length = q.Capacity
 	}
 }
 
@@ -63,9 +62,9 @@ func (q *QueueFIFO) Push(ele interface{}) {
 func (q *QueueFIFO) Range(fn func(int, interface{}) bool) {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	for i := 0; i < q.len; i++ {
-		idx := (q.tail - i + q.capacity) % q.capacity
-		if !fn(i, q.cache[idx]) {
+	for i := 0; i < q.Length; i++ {
+		idx := (q.T - i + q.Capacity) % q.Capacity
+		if !fn(i, q.Cache[idx]) {
 			break
 		}
 	}
@@ -78,56 +77,91 @@ func (q *QueueFIFO) Range(fn func(int, interface{}) bool) {
 func (q *QueueFIFO) ReverseRange(fn func(int, interface{}) bool) {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	for i := 0; i < q.len; i++ {
-		idx := (q.head + i) % q.capacity
-		if !fn(i, q.cache[idx]) {
+	for i := 0; i < q.Length; i++ {
+		idx := (q.H + i) % q.Capacity
+		if !fn(i, q.Cache[idx]) {
 			break
 		}
 	}
 }
 
+func (q *QueueFIFO) Resize(capacity int) {
+	q.mtx.Lock()
+	defer q.mtx.Unlock()
+	if capacity == q.Capacity {
+		return
+	}
+	cache := make([]interface{}, capacity, capacity)
+	offset := q.Length - capacity
+	tail := 0
+	foreach := func(idx int, value interface{}) bool {
+		if idx < offset {
+			return true
+		}
+		cache[tail] = value
+		tail++
+
+		return true
+	}
+	for i := 0; i < q.Length; i++ {
+		idx := (q.H + i) % q.Capacity
+		if !foreach(i, q.Cache[idx]) {
+			break
+		}
+	}
+	q.H = 0
+	q.T = tail - 1
+	q.Capacity = capacity
+	//更新长度
+	if q.Length > capacity {
+		q.Length = capacity
+	}
+
+	q.Cache = cache
+}
+
 func (q *QueueFIFO) Clear() {
 	q.mtx.Lock()
 	defer q.mtx.Unlock()
-	q.len = 0
-	q.head = 0
-	q.tail = 0
+	q.Length = 0
+	q.H = 0
+	q.T = 0
 }
 
 func (q *QueueFIFO) IsFull() bool {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	return q.len == q.capacity
+	return q.Length == q.Capacity
 }
 
 func (q *QueueFIFO) IsEmpty() bool {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	return 0 == q.len
+	return 0 == q.Length
 }
 
 func (q *QueueFIFO) Len() int {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	return q.len
+	return q.Length
 }
 
 func (q *QueueFIFO) Head() (interface{}, error) {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	if 0 == q.len {
+	if 0 == q.Length {
 		return nil, errors.New("queue is empty")
 	}
-	return q.cache[q.head], nil
+	return q.Cache[q.H], nil
 }
 
 func (q *QueueFIFO) Tail() (interface{}, error) {
 	q.mtx.RLock()
 	defer q.mtx.RUnlock()
-	if 0 == q.len {
+	if 0 == q.Length {
 		return nil, errors.New("queue is empty")
 	}
-	return q.cache[q.tail], nil
+	return q.Cache[q.T], nil
 }
 
 func (q *QueueFIFO) Print() {
