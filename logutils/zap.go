@@ -9,8 +9,8 @@ package logutils
 
 import (
 	"fmt"
-	"github.com/lestrrat-go/file-rotatelogs"
 	"github.com/0DeOrg/gutils/fileutils"
+	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -162,7 +162,7 @@ func getEncoderConfig() (config zapcore.EncoderConfig) {
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
 		EncodeTime:     CustomTimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.FullCallerEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 	switch {
 	case zapConfig.EncodeLevel == "LowercaseLevelEncoder": // 小写编码器(默认)
