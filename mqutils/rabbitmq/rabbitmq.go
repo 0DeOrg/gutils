@@ -98,12 +98,12 @@ func (rq *RabbitMq) Consume(name string) (<-chan amqp.Delivery, error) {
 }
 
 func (rq *RabbitMq) Process() {
-	defer dumputils.HandlePanic()
 	duration := 10 * time.Second
 	ticker := time.NewTicker(duration)
 	cnSuccess := 0
 	cnFailed := 0
 	go func() {
+		defer dumputils.HandlePanic()
 		for {
 			select {
 			case content := <-rq.publishCh:
