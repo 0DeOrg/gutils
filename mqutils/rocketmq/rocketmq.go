@@ -30,6 +30,9 @@ func NewRocketMQ(cfg *RocketMQConfig) (*RocketMQ, error) {
 	}
 	ret := &RocketMQ{
 		producerCache: make([]*ProducerProxy, 0, cfg.ProducerCount),
+		chContent:     make(chan *PublishContent, 1000),
+		cfg:           cfg,
+		mapTag:        make(map[string]*ProducerProxy),
 	}
 	for i := 0; i < cfg.ProducerCount; i++ {
 		p, err := NewProducerProxy(cfg, i)
@@ -37,6 +40,10 @@ func NewRocketMQ(cfg *RocketMQConfig) (*RocketMQ, error) {
 			return nil, err
 		}
 		ret.producerCache = append(ret.producerCache, p)
+	}
+
+	if len(ret.producerCache) > 0 {
+		go ret.goSendThread()
 	}
 	return ret, nil
 }
@@ -66,13 +73,6 @@ func (mq *RocketMQ) PublishContent(content *PublishContent) {
 	mq.chContent <- content
 }
 
-func (mq *RocketMQ) DoJob() {
-	if len(mq.producerCache) > 0 {
-		go mq.goSendThread()
-	}
-
-}
-
 func (mq *RocketMQ) goSendThread() {
 	defer dumputils.HandlePanic()
 
@@ -100,6 +100,7 @@ func (mq *RocketMQ) getProducerWithTopic(topic string, tag string) *ProducerProx
 	if idx >= len(mq.producerCache) {
 		idx = 0
 	}
+	mq.idx = idx
 
 	return ret
 }

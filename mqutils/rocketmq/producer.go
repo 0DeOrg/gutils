@@ -9,6 +9,8 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"go.uber.org/zap"
+	"os"
+	"strconv"
 )
 
 /**
@@ -30,6 +32,7 @@ func NewProducerProxy(cfg *RocketMQConfig, idx int) (*ProducerProxy, error) {
 	p, err := rocketmq.NewProducer(
 		producer.WithNameServer(cfg.NameServers),
 		producer.WithGroupName(cfg.ProducerGroup),
+		producer.WithInstanceName(strconv.Itoa(os.Getpid())+"_"+strconv.Itoa(idx)),
 	)
 
 	if nil != err {

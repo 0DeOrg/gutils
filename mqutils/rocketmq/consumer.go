@@ -18,7 +18,6 @@ import (
 type ConsumerPushProxy struct {
 	cfg      *RocketMQConfig
 	consumer rocketmq.PushConsumer
-	ctx      context.Context
 }
 
 func NewConsumerPushProxy(groupName string, m consumer.MessageModel, cfg *RocketMQConfig) (*ConsumerPushProxy, error) {
