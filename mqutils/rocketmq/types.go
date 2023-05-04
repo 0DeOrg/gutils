@@ -17,4 +17,5 @@ type PublishContent struct {
 	Topic string
 	Tag   string
 	Body  []byte
+	Keys  []string
 }

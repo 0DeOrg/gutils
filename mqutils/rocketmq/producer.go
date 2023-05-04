@@ -82,6 +82,9 @@ func (proxy *ProducerProxy) goSendThread() {
 			if "" != content.Tag {
 				msg.WithTag(content.Tag)
 			}
+			if len(content.Keys) > 0 {
+				msg.WithKeys(content.Keys)
+			}
 			_, err := proxy.producer.SendSync(ctx, msg)
 			if nil != err {
 				logutils.Error("ProducerProxy|SendSync err", zap.Error(err), zap.Int("idx", proxy.idx))
