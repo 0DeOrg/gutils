@@ -55,6 +55,28 @@ func (q *QueueFIFO) Push(ele interface{}) {
 	}
 }
 
+func (q *QueueFIFO) UpdateFromTail(idx int, value interface{}) bool {
+	if idx >= q.Length {
+		return false
+	}
+
+	realIdx := (q.T - idx + q.Capacity) % q.Capacity
+	q.Cache[realIdx] = value
+
+	return true
+}
+
+func (q *QueueFIFO) UpdateFromHead(idx int, value interface{}) bool {
+	if idx >= q.Length {
+		return false
+	}
+
+	realIdx := (q.H + idx) % q.Capacity
+	q.Cache[realIdx] = value
+
+	return true
+}
+
 // Range
 /* @Description: 从队列尾开始遍历
  * @param fn func(int, interface{}) bool
