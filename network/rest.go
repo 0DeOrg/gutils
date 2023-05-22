@@ -116,7 +116,8 @@ func (h *RestAgent) Get(path string, params map[string]string, headers map[strin
 
 func (h *RestAgent) Post(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
 	url := h.URL.String() + path
-	res, err := h.Client.R().SetQueryParams(params).SetBody(reqBody).SetHeaders(headers).SetCookies(cookies).Post(url)
+	r := h.Client.R()
+	res, err := r.SetQueryParams(params).SetBody(reqBody).SetHeaders(headers).SetCookies(cookies).Post(url)
 	if nil != err {
 		return "", err
 	}
@@ -126,6 +127,19 @@ func (h *RestAgent) Post(path string, reqBody string, params map[string]string, 
 	}
 	return res.String(), nil
 
+}
+
+func (h *RestAgent) PostForm(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
+	url := h.URL.String() + path
+	res, err := h.Client.R().SetFormData(params).SetBody(reqBody).SetHeaders(headers).SetCookies(cookies).Post(url)
+	if nil != err {
+		return "", err
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("response err: %s", res.String())
+	}
+	return res.String(), nil
 }
 
 func (h *RestAgent) Put(path string, reqBody string, params map[string]string, headers map[string]string, cookies []*http.Cookie) (string, error) {
