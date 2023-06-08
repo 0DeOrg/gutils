@@ -9,9 +9,9 @@ package gutils
 
 import (
 	"fmt"
+	"github.com/0DeOrg/gutils/judge"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"github.com/0DeOrg/gutils/judge"
 	"log"
 )
 
@@ -20,7 +20,7 @@ const CONFIG_PATH = "config.yaml"
 //外部命令行解析的时候赋值
 var CfgPathFlag = ""
 
-func NewViper(path string, pObj interface{}, callback ...func()) *viper.Viper {
+func NewViper(path string, pObj interface{}, callback ...func()) (*viper.Viper, error) {
 	var config string
 	if len(path) == 0 {
 		//flag.StringVar(&config, "c", "", "choose config file.")
@@ -60,6 +60,7 @@ func NewViper(path string, pObj interface{}, callback ...func()) *viper.Viper {
 
 	if err := v.Unmarshal(pObj); err != nil {
 		log.Println(err.Error())
+		return nil, err
 	}
-	return v
+	return v, nil
 }
