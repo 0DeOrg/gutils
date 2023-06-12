@@ -7,10 +7,11 @@ package nacosutils
  * @Date: 2023-05-22 8:20 下午
  */
 
-const NACOS_PATH = "apollo.yaml"
+const NACOS_PATH = "nacos.yaml"
 
 type NacosConfig struct {
-	Servers []*ServerConfig
+	Servers []*ServerConfig `mapstructure:"servers"            json:"servers"          yaml:"servers"`
+	Client  *ClientConfig   `mapstructure:"client"            json:"client"          yaml:"client"`
 }
 
 type ServerConfig struct {
@@ -20,4 +21,10 @@ type ServerConfig struct {
 }
 
 type ClientConfig struct {
+	Namespace string `mapstructure:"namespace"            json:"namespace"          yaml:"namespace"`
+	DataId    string `mapstructure:"data-id"            json:"data-id"          yaml:"data-id"`
+	Group     string `mapstructure:"group"            json:"group"          yaml:"group"`
+	LogPath   string `mapstructure:"log-path"            json:"log-path"          yaml:"log-path"`
+	CachePath string `mapstructure:"cache-path"            json:"cache-path"          yaml:"cache-path"`
+	LogLevel  string `mapstructure:"log-level"            json:"log-level"          yaml:"log-level"`
 }
