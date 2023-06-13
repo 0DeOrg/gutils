@@ -25,11 +25,8 @@ import (
  * @param confType string 配置文件类型，yaml， 等
  * @return error
  */
-func NacosGetConfig(path string, confPtr interface{}, confType string) error {
-	if err := convert.MustBeStructPtr(confPtr); nil != err {
-		return err
-	}
 
+func ReadNacosConfig(path string) (*NacosConfig, error) {
 	nacosConf := NacosConfig{}
 	fileName := NACOS_PATH
 	if "" != path {
@@ -38,7 +35,14 @@ func NacosGetConfig(path string, confPtr interface{}, confType string) error {
 
 	_, err := gutils.NewViper(fileName, &nacosConf)
 	if nil != err {
-		return fmt.Errorf("nacos.yaml load err: %s", err.Error())
+		return nil, fmt.Errorf("nacos.yaml load err: %s", err.Error())
+	}
+
+	return &nacosConf, nil
+}
+func NacosGetConfig(nacosConf *NacosConfig, confPtr interface{}, confType string) error {
+	if err := convert.MustBeStructPtr(confPtr); nil != err {
+		return err
 	}
 
 	scs := make([]constant.ServerConfig, 0)
