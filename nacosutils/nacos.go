@@ -52,8 +52,9 @@ func NacosGetConfig(path string, confPtr interface{}, confType string) error {
 		scs = append(scs, sc)
 	}
 	cc := constant.ClientConfig{
+		Username:            nacosConf.Client.UserName,
+		Password:            nacosConf.Client.Password,
 		NamespaceId:         nacosConf.Client.Namespace, // 如果需要支持多namespace，我们可以场景多个client,它们有不同的NamespaceId。当namespace是public时，此处填空字符串。
-		TimeoutMs:           5000,
 		NotLoadCacheAtStart: true,
 		LogDir:              nacosConf.Client.LogPath,
 		CacheDir:            nacosConf.Client.CachePath,

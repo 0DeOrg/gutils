@@ -21,6 +21,8 @@ type ServerConfig struct {
 }
 
 type ClientConfig struct {
+	UserName  string `mapstructure:"user-name"            json:"user-name"          yaml:"user-name"`
+	Password  string `mapstructure:"password"            json:"password"          yaml:"password"`
 	Namespace string `mapstructure:"namespace"            json:"namespace"          yaml:"namespace"`
 	DataId    string `mapstructure:"data-id"            json:"data-id"          yaml:"data-id"`
 	Group     string `mapstructure:"group"            json:"group"          yaml:"group"`
