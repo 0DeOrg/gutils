@@ -9,20 +9,22 @@ package daoutils
 import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"strings"
 )
 
 type MySQLCfg struct {
-	Params            string `mapstructure:"params"         json:"params"        yaml:"params"`
-	MaxIdleConns      int    `mapstructure:"max-idle-conns" json:"maxIdleConns"  yaml:"max-idle-conns"`
-	MaxOpenConns      int    `mapstructure:"max-open-conns" json:"maxOpenConns"  yaml:"max-open-conns"`
-	LogMode           string `mapstructure:"log-mode"       json:"logMode"       yaml:"log-mode"`
-	Prefix            string `mapstructure:"prefix"         json:"prefix"        yaml:"prefix"`
-	URL               string `mapstructure:"url"           json:"url"             yaml:"url"`
-	Dbname            string `mapstructure:"db-name"        json:"dbname"        yaml:"db-name"`
-	Username          string `mapstructure:"username"       json:"username"      yaml:"username"`
-	Password          string `mapstructure:"password"       json:"password"      yaml:"password"`
-	DefaultStringSize uint   `mapstructure:"default-str-size"       json:"defaultStrSize"      yaml:"default-str-size"`
+	Params                 string `mapstructure:"params"         json:"params"        yaml:"params"`
+	MaxIdleConns           int    `mapstructure:"max-idle-conns" json:"maxIdleConns"  yaml:"max-idle-conns"`
+	MaxOpenConns           int    `mapstructure:"max-open-conns" json:"maxOpenConns"  yaml:"max-open-conns"`
+	LogMode                string `mapstructure:"log-mode"       json:"logMode"       yaml:"log-mode"`
+	Prefix                 string `mapstructure:"prefix"         json:"prefix"        yaml:"prefix"`
+	URL                    string `mapstructure:"url"           json:"url"             yaml:"url"`
+	Dbname                 string `mapstructure:"db-name"        json:"dbname"        yaml:"db-name"`
+	Username               string `mapstructure:"username"       json:"username"      yaml:"username"`
+	Password               string `mapstructure:"password"       json:"password"      yaml:"password"`
+	DefaultStringSize      uint   `mapstructure:"default-str-size"       json:"defaultStrSize"      yaml:"default-str-size"`
+	SkipDefaultTransaction bool   `mapstructure:"skip-default-transaction"       json:"skip-default-transaction"      yaml:"skip-default-transaction"`
 }
 
 type MySQLClient struct {
@@ -53,6 +55,11 @@ func (c *MySQLClient) Connect() error {
 
 	gormConfig := c.generateGormConfig()
 
+	if c.cfg.SkipDefaultTransaction {
+		gormConfig.SkipDefaultTransaction = true
+
+	}
+
 	if db, err := gorm.Open(mysql.New(mysqlConfig), gormConfig); err != nil {
 		return err
 	} else {
@@ -73,18 +80,22 @@ func (c MySQLClient) DSN() string {
 func (c MySQLClient) generateGormConfig() *gorm.Config {
 	gormConfig := gorm.Config{}
 
+	if nil == gormConfig.Logger {
+		gormConfig.Logger = logger.Default
+	}
+
 	switch strings.ToLower(c.cfg.LogMode) {
 	case "silent":
-
+		gormConfig.Logger.LogMode(logger.Silent)
 		break
 	case "info":
-
+		gormConfig.Logger.LogMode(logger.Info)
 		break
 	case "warn":
-
+		gormConfig.Logger.LogMode(logger.Warn)
 		break
 	case "error":
-
+		gormConfig.Logger.LogMode(logger.Error)
 		break
 	default:
 
