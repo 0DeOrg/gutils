@@ -85,6 +85,10 @@ func NacosGetConfig(nacosConf *NacosConfig, confPtr interface{}, confType string
 		return fmt.Errorf("load nacos config err:%s", err.Error())
 	}
 
+	if "" == content {
+		return fmt.Errorf("nacos content is empty")
+	}
+
 	vp := viper.New()
 	vp.SetConfigType(confType)
 	listener := changeListener{
